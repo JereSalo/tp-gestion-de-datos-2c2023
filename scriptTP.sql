@@ -120,8 +120,10 @@ CREATE TABLE localidad (
 );
 
 
-CREATE TABLE provincia (id NUMERIC(18,0) PRIMARY KEY,
-						nombre NVARCHAR(100))
+CREATE TABLE provincia (
+	id NUMERIC(18,0) PRIMARY KEY,
+	nombre NVARCHAR(100)
+)
 
 
 
