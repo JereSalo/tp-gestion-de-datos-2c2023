@@ -348,16 +348,21 @@ INSERT INTO MANGO_DB.detalle_alq (cod_detalle_alq, cod_alquiler, nro_periodo_fin
 SELECT m.ALQUILER_CODIGO, m.DETALLE_ALQ_NRO_PERIODO_FIN, m.DETALLE_ALQ_PRECIO, m.DETALLE_ALQ_NRO_PERIODO_INI
 FROM gd_esquema.Maestra m
 
-/*
+-- FALTA ID
 INSERT INTO MANGO_DB.medio_pago (id, descripcion)
-SELECT m.PAGO_VENTA
+SELECT m.PAGO_VENTA_MEDIO_PAGO
 FROM gd_esquema.Maestra m
-*/
+
 
 
 -- FALTA ID
 INSERT INTO MANGO_DB.comprador (id, nombre, apellido, dni, fecha_registro, telefono, mail, fecha_nac)
 SELECT m.COMPRADOR_NOMBRE, m.COMPRADOR_APELLIDO, m.COMPRADOR_DNI, m.COMPRADOR_FECHA_REGISTRO, m.COMPRADOR_FECHA_NAC
 FROM gd_esquema.Maestra m
+
+INSERT INTO MANGO_DB.pago_venta (id, importe, moneda, cotizacion, id_medio_pago)
+SELECT m.PAGO_VENTA_IMPORTE, m.PAGO_VENTA_MONEDA, m.PAGO_VENTA_COTIZACION, id_medio_pago 
+FROM gd_esquema.Maestra m
+
 
 /* ------- FIN MIGRACION DE DATOS ------- */
