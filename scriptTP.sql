@@ -269,71 +269,95 @@ CREATE TABLE MANGO_DB.pago_alquiler (
 /* ------- INICIO MIGRACION DE DATOS ------- */
 SELECT * FROM gd_esquema.Maestra
 
--- FALTA ID aunque le puso codigo
-INSERT INTO MANGO_DB.tipo_inmueble
+-- CHEQUEAR ID aunque le puso codigo
+INSERT INTO MANGO_DB.tipo_inmueble (id, tipo)
 SELECT m.INMUEBLE_CODIGO, m.INMUEBLE_TIPO_INMUEBLE 
 FROM gd_esquema.Maestra m
 
--- FALTA ID
-INSERT INTO MANGO_DB.estado
+-- CHEQUEAR ID
+INSERT INTO MANGO_DB.estado (id, estado)
 SELECT m.INMUEBLE_CODIGO, m.INMUEBLE_ESTADO
 FROM gd_esquema.Maestra m
 
--- FALTA ID
-INSERT INTO MANGO_DB.ambientes
+-- CHEQUEAR ID
+INSERT INTO MANGO_DB.ambientes (id, detalle)
 SELECT m.INMUEBLE_CODIGO, m.INMUEBLE_ESTADO
 FROM gd_esquema.Maestra m
 
--- FALTA ID
-INSERT INTO MANGO_DB.disposicion
+-- CHEQUEAR ID
+INSERT INTO MANGO_DB.disposicion (id, disposicion)
 SELECT m.INMUEBLE_CODIGO, m.INMUEBLE_DISPOSICION
 FROM gd_esquema.Maestra m
 
--- FALTA ID
-INSERT INTO MANGO_DB.orientacion
+-- CHEQUEAR ID
+INSERT INTO MANGO_DB.orientacion (id, orientacion)
 SELECT m.INMUEBLE_CODIGO, m.INMUEBLE_ORIENTACION
 FROM gd_esquema.Maestra m
 
--- FALTA ID
-INSERT INTO MANGO_DB.caracteristicas_inmueble
-SELECT m.INMUEBLE_CODIGO, m.INMUEBLE_CARACTERISTICA_WIFI, m.INMUEBLE_CARACTERISTICA_CABLE, m.INMUEBLE_CARACTERISTICA_CALEFACCION, m.INMUEBLE_CARACTERISTICA_WIFI
+-- CHEQUEAR ID
+INSERT INTO MANGO_DB.caracteristicas_inmueble (id, wifi, cable, calefaccion, gas)
+SELECT m.INMUEBLE_CODIGO, m.INMUEBLE_CARACTERISTICA_WIFI, m.INMUEBLE_CARACTERISTICA_CABLE, m.INMUEBLE_CARACTERISTICA_CALEFACCION, m.INMUEBLE_CARACTERISTICA_GAS
 FROM gd_esquema.Maestra m
 
--- FALTA ID
-INSERT INTO MANGO_DB.barrio
+-- CHEQUEAR ID
+INSERT INTO MANGO_DB.barrio (id, nombre)
 SELECT m.INMUEBLE_CODIGO, m.INMUEBLE_BARRIO
 FROM gd_esquema.Maestra m
 
 --INSERT INTO MANGO_DB.propietario_x_inmueble
 
 -- CHEQUEAR ID
-INSERT INTO MANGO_DB.propietario
+INSERT INTO MANGO_DB.propietario (id, nombre, apellido, dni, fecha_registro, telefono, mail, fecha_nac)
 SELECT m.INMUEBLE_CODIGO, m.PROPIETARIO_NOMBRE, m.PROPIETARIO_APELLIDO, m.PROPIETARIO_DNI, m.PROPIETARIO_FECHA_REGISTRO, m.PROPIETARIO_TELEFONO, m.PROPIETARIO_MAIL, m.PROPIETARIO_FECHA_NAC
 FROM gd_esquema.Maestra m
 
-INSERT INTO MANGO_DB.moneda
+INSERT INTO MANGO_DB.moneda (id, descripcion)
 SELECT m.ANUNCIO_CODIGO, m.ANUNCIO_MONEDA
 FROM gd_esquema.Maestra m
 
-INSERT INTO MANGO_DB.tipo_operacion
+INSERT INTO MANGO_DB.tipo_operacion (id, tipo)
 SELECT m.ANUNCIO_CODIGO, m.ANUNCIO_TIPO_OPERACION
 FROM gd_esquema.Maestra m
 
-INSERT INTO MANGO_DB.agente
+INSERT INTO MANGO_DB.agente (id, nombre, apellido, dni, fecha_registro, telefono,mail, fecha_nac)
 SELECT m.ANUNCIO_CODIGO, m.AGENTE_NOMBRE, m.AGENTE_APELLIDO, m.AGENTE_DNI, m.AGENTE_FECHA_REGISTRO, m.AGENTE_TELEFONO, m.AGENTE_MAIL, m.AGENTE_FECHA_NAC
 FROM gd_esquema.Maestra m
 
-INSERT INTO MANGO_DB.estado_anuncio
+INSERT INTO MANGO_DB.estado_anuncio (id, estado)
 SELECT m.ANUNCIO_CODIGO, m.ANUNCIO_ESTADO
 FROM gd_esquema.Maestra m
 
-INSERT INTO MANGO_DB.inquilino
+INSERT INTO MANGO_DB.inquilino (id, nombre, apellido, dni, fecha_registro,telefono, mail, fecha_nac)
 SELECT m.ALQUILER_CODIGO, m.INQUILINO_NOMBRE, m.INQUILINO_APELLIDO, m.INQUILINO_DNI, m.INQUILINO_FECHA_REGISTRO, m.INQUILINO_TELEFONO, m.INQUILINO_MAIL, m.INQUILINO_FECHA_NAC
 FROM gd_esquema.Maestra m
 
-INSERT INTO MANGO_DB.provincia
+INSERT INTO MANGO_DB.provincia (id, nombre)
 SELECT m.SUCURSAL_PROVINCIA --FALTA ID Y CHEQUEAR PROVINCIA
 FROM gd_esquema.Maestra m
 
+INSERT INTO MANGO_DB.localidad (id, nombre, id_provincia)
+SELECT m.INMUEBLE_CODIGO, m.INMUEBLE_LOCALIDAD,
+FROM gd_esquema.Maestra m
+
+INSERT INTO MANGO_DB.sucursal (id, nombre, direccion, telefono, id_localidad)
+SELECT m.SUCURSAL_CODIGO, m.SUCURSAL_NOMBRE, m.SUCURSAL_DIRECCION, m.SUCURSAL_TELEFONO, 
+FROM gd_esquema.Maestra m
+
+--FALTA ID cod_detalle_alq
+INSERT INTO MANGO_DB.detalle_alq (cod_detalle_alq, cod_alquiler, nro_periodo_fin, precio, nro_periodo_in)
+SELECT m.ALQUILER_CODIGO, m.DETALLE_ALQ_NRO_PERIODO_FIN, m.DETALLE_ALQ_PRECIO, m.DETALLE_ALQ_NRO_PERIODO_INI
+FROM gd_esquema.Maestra m
+
+/*
+INSERT INTO MANGO_DB.medio_pago (id, descripcion)
+SELECT m.PAGO_VENTA
+FROM gd_esquema.Maestra m
+*/
+
+
+-- FALTA ID
+INSERT INTO MANGO_DB.comprador (id, nombre, apellido, dni, fecha_registro, telefono, mail, fecha_nac)
+SELECT m.COMPRADOR_NOMBRE, m.COMPRADOR_APELLIDO, m.COMPRADOR_DNI, m.COMPRADOR_FECHA_REGISTRO, m.COMPRADOR_FECHA_NAC
+FROM gd_esquema.Maestra m
 
 /* ------- FIN MIGRACION DE DATOS ------- */
