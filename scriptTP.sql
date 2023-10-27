@@ -53,13 +53,6 @@ CREATE TABLE MANGO_DB.barrio (
 	nombre NVARCHAR(100)
 );
 
-CREATE TABLE MANGO_DB.propietario_x_inmueble (
-	id_propietario NUMERIC(18,0),
-	id_inmueble NUMERIC(18,0),
-	
-	CONSTRAINT PK_ClaveCompuesta1 PRIMARY KEY(id_propietario, id_inmueble)
-);
-
 CREATE TABLE MANGO_DB.propietario (
 	id NUMERIC(18,0) PRIMARY KEY,
 	nombre NVARCHAR(100),
@@ -122,7 +115,7 @@ CREATE TABLE MANGO_DB.localidad (
 );
 					  
 CREATE TABLE MANGO_DB.sucursal (
-    id NUMERIC(18,0) PRIMARY KEY,
+    codigo NUMERIC(18,0) PRIMARY KEY,
     nombre NVARCHAR(100),
     direccion NVARCHAR(100),
     telefono NVARCHAR(100),
@@ -132,13 +125,11 @@ CREATE TABLE MANGO_DB.sucursal (
 );
 
 CREATE TABLE MANGO_DB.detalle_alq (
-    cod_detalle_alq NUMERIC(18,0),
+    cod_detalle_alq NUMERIC(18,0) PRIMARY KEY,
     cod_alquiler NUMERIC(18,0),
     nro_periodo_fin NUMERIC(18,0),
     precio NUMERIC(18,2),
-    nro_periodo_in NUMERIC(18,0),
-    
-	CONSTRAINT PK_ClaveCompuesta2 PRIMARY KEY(cod_detalle_alq, cod_alquiler)
+    nro_periodo_in NUMERIC(18,0)
 );
 
 CREATE TABLE MANGO_DB.medio_pago (
@@ -168,7 +159,7 @@ CREATE TABLE MANGO_DB.pago_venta (
 );
 
 CREATE TABLE MANGO_DB.inmueble (
-    id NUMERIC(18,0) PRIMARY KEY,
+    codigo NUMERIC(18,0) PRIMARY KEY,
     nombre NVARCHAR(100),
     descripcion NVARCHAR(100),
     direccion NVARCHAR(100),
@@ -197,7 +188,7 @@ CREATE TABLE MANGO_DB.inmueble (
 );
 
 CREATE TABLE MANGO_DB.anuncio (
-    id NUMERIC(18,0) PRIMARY KEY,
+    codigo NUMERIC(18,0) PRIMARY KEY,
     id_inmueble NUMERIC(18,0) NOT NULL,
     id_agente NUMERIC(18,0) NOT NULL,
     fecha_publicacion DATETIME,
@@ -217,7 +208,7 @@ CREATE TABLE MANGO_DB.anuncio (
 );
 
 CREATE TABLE MANGO_DB.alquiler (
-    id NUMERIC(18,0) PRIMARY KEY,
+    codigo NUMERIC(18,0) PRIMARY KEY,
     fecha_inicio DATETIME,
     fecha_fin DATETIME,
     cant_periodos NUMERIC(18,0),
@@ -234,7 +225,7 @@ CREATE TABLE MANGO_DB.alquiler (
 );
 
 CREATE TABLE MANGO_DB.venta (
-    id NUMERIC(18,0) PRIMARY KEY,
+    codigo NUMERIC(18,0) PRIMARY KEY,
     fecha DATETIME,
     precio_venta NUMERIC(18,2),
     moneda NVARCHAR(100),
@@ -249,7 +240,7 @@ CREATE TABLE MANGO_DB.venta (
 );
 
 CREATE TABLE MANGO_DB.pago_alquiler (
-    id NUMERIC(18,0) PRIMARY KEY,
+	codigo NUMERIC(18,0) PRIMARY KEY,
     id_alquiler NUMERIC(18,0) NOT NULL,
     fecha_pago DATETIME,
     fecha_vencimiento DATETIME,
