@@ -102,12 +102,12 @@ CREATE TABLE MANGO_DB.inquilino (
 );
 
 CREATE TABLE MANGO_DB.provincia (
-	id NUMERIC(18,0) PRIMARY KEY,
+	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY, --Con el identiti hago que sea autoincremental, empieza en 1 y suma de a 1
 	nombre NVARCHAR(100)
 );
 
 CREATE TABLE MANGO_DB.localidad (
-    id NUMERIC(18,0) PRIMARY KEY,
+    id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
     nombre NVARCHAR(100),
     id_provincia NUMERIC(18,0) NOT NULL,
     
@@ -133,7 +133,7 @@ CREATE TABLE MANGO_DB.detalle_alq (
 );
 
 CREATE TABLE MANGO_DB.medio_pago (
-	id NUMERIC(18,0) PRIMARY KEY,
+	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
 	descripcion NVARCHAR(100)
 );
 					  
@@ -328,33 +328,18 @@ FROM gd_esquema.Maestra m
 WHERE m.ALQUILER_CODIGO IS NOT NULL
 
 -- MANGO_DB.provincia
-DECLARE @inmueble_provincia NVARCHAR(100), @contador INT
-DECLARE cursorProvincia CURSOR FOR
-	SELECT DISTINCT m.INMUEBLE_PROVINCIA
-	FROM gd_esquema.Maestra m
-	WHERE m.INMUEBLE_PROVINCIA IS NOT NULL
-
-SET @contador = 1
-
-OPEN cursorProvincia
-FETCH NEXT FROM cursorProvincia INTO @inmueble_provincia
-WHILE(@@FETCH_STATUS = 0)
-BEGIN	
-	INSERT INTO MANGO_DB.provincia (id, nombre)
-	VALUES(@contador, @inmueble_provincia)
-
-	SET @contador += 1
-
-FETCH NEXT FROM cursorProvincia INTO @id
-END
-CLOSE cursorProvincia
-DEALLOCATE cursorProvincia
-
--- MANGO_DB.localidad
-INSERT INTO MANGO_DB.localidad (id, nombre, id_provincia)
-SELECT m.INMUEBLE_CODIGO, m.INMUEBLE_LOCALIDAD,
+INSERT INTO MANGO_DB.provincia (nombre)
+SELECT DISTINCT m.INMUEBLE_PROVINCIA
 FROM gd_esquema.Maestra m
+WHERE m.INMUEBLE_PROVINCIA IS NOT NULL
 
+-- MANGO_DB.localidad (ESTO HAY QUE HACERLO CON CURSORES O UNA FUNCION PARA VER DE QUE PROVINCIA ES CADA LOCALIDAD)
+INSERT INTO MANGO_DB.localidad (nombre, id_provincia)
+SELECT DISTINCT m.INMUEBLE_CODIGO, m.INMUEBLE_LOCALIDAD
+FROM gd_esquema.Maestra m
+WHERE m.INMUEBLE_LOCALIDAD IS NOT NULL AND m.INMUEBLE_CODIGO IS NOT NULL
+
+-- MANGO_DB.sucursal
 INSERT INTO MANGO_DB.sucursal (id, nombre, direccion, telefono, id_localidad)
 SELECT m.SUCURSAL_CODIGO, m.SUCURSAL_NOMBRE, m.SUCURSAL_DIRECCION, m.SUCURSAL_TELEFONO, 
 FROM gd_esquema.Maestra m
@@ -364,20 +349,20 @@ INSERT INTO MANGO_DB.detalle_alq (cod_detalle_alq, cod_alquiler, nro_periodo_fin
 SELECT m.ALQUILER_CODIGO, m.DETALLE_ALQ_NRO_PERIODO_FIN, m.DETALLE_ALQ_PRECIO, m.DETALLE_ALQ_NRO_PERIODO_INI
 FROM gd_esquema.Maestra m
 
--- FALTA ID
-INSERT INTO MANGO_DB.medio_pago (id, descripcion)
-SELECT m.PAGO_VENTA_MEDIO_PAGO
+-- MANGO_DB.medio_pago
+INSERT INTO MANGO_DB.medio_pago(descripcion)
+SELECT DISTINCT m.PAGO_VENTA_MEDIO_PAGO
 FROM gd_esquema.Maestra m
-
-
+WHERE m.PAGO_VENTA_MEDIO_PAGO IS NOT NULL
 
 -- FALTA ID
 INSERT INTO MANGO_DB.comprador (id, nombre, apellido, dni, fecha_registro, telefono, mail, fecha_nac)
 SELECT m.COMPRADOR_NOMBRE, m.COMPRADOR_APELLIDO, m.COMPRADOR_DNI, m.COMPRADOR_FECHA_REGISTRO, m.COMPRADOR_FECHA_NAC
 FROM gd_esquema.Maestra m
 
+-- MANGO_DB.pago_venta FALTA CONECTAR CON ID MEDIO PAGO
 INSERT INTO MANGO_DB.pago_venta (id, importe, moneda, cotizacion, id_medio_pago)
-SELECT m.PAGO_VENTA_IMPORTE, m.PAGO_VENTA_MONEDA, m.PAGO_VENTA_COTIZACION, id_medio_pago 
+SELECT m.PAGO_VENTA_IMPORTE, m.PAGO_VENTA_MONEDA, m.PAGO_VENTA_COTIZACION 
 FROM gd_esquema.Maestra m
 
 
