@@ -4,6 +4,7 @@ USE GD2C2023
 IF NOT EXISTS (SELECT schema_id FROM sys.schemas WHERE name = 'MANGO_DB')
 BEGIN
     -- Crea el schema
+	DROP SCHEMA MANGO_DB
     EXEC('CREATE SCHEMA MANGO_DB;'); 
     PRINT 'Esquema "MANGO_DB" creado con éxito.';
 END
@@ -354,30 +355,53 @@ SELECT m.SUCURSAL_CODIGO, m.SUCURSAL_NOMBRE, m.SUCURSAL_DIRECCION, m.SUCURSAL_TE
 FROM gd_esquema.Maestra m
 
 -- MANGO_DB.detalle_alq
--- Chequear CAMPOS NULL, QUE HACEMOS???
+-- Chequear CAMPOS NULL, QUE HACEMOS??? PUSE EL WHERE PARA ANULAR ESO, CHEQUEAR ENUNCIADO
 INSERT INTO MANGO_DB.detalle_alq (cod_alquiler, nro_periodo_fin, precio, nro_periodo_in)
 SELECT DISTINCT m.ALQUILER_CODIGO, m.DETALLE_ALQ_NRO_PERIODO_FIN, m.DETALLE_ALQ_PRECIO, m.DETALLE_ALQ_NRO_PERIODO_INI
 FROM gd_esquema.Maestra m
+WHERE m.DETALLE_ALQ_NRO_PERIODO_FIN IS NOT NULL
 
 -- MANGO_DB.medio_pago
-INSERT INTO MANGO_DB.medio_pago(id, descripcion)
+INSERT INTO MANGO_DB.medio_pago(descripcion)
 SELECT DISTINCT m.PAGO_VENTA_MEDIO_PAGO
 FROM gd_esquema.Maestra m
 WHERE m.PAGO_VENTA_MEDIO_PAGO IS NOT NULL
 
 -- MANGO_DB.comprador
 -- CHEQUEAR A QUIEN HAY QUE HACERLE DISTINCT, TAL VEZ AL DNI?
-INSERT INTO MANGO_DB.comprador (id, nombre, apellido, dni, fecha_registro, telefono, mail, fecha_nac)
+INSERT INTO MANGO_DB.comprador (nombre, apellido, dni, fecha_registro, telefono, mail, fecha_nac)
 SELECT DISTINCT m.COMPRADOR_NOMBRE, m.COMPRADOR_APELLIDO, m.COMPRADOR_DNI, m.COMPRADOR_FECHA_REGISTRO, m.COMPRADOR_FECHA_NAC
 FROM gd_esquema.Maestra m
 WHERE m.COMPRADOR_DNI IS NOT NULL
 
--- MANGO_DB.pago_venta CHEQUEAR subquery para FK
-INSERT INTO MANGO_DB.pago_venta (id, importe, moneda, cotizacion, id_medio_pago)
+-- MANGO_DB.pago_venta 
+-- CHEQUEAR subquery para FK, parece que sirve a simple vista
+INSERT INTO MANGO_DB.pago_venta (importe, moneda, cotizacion, id_medio_pago)
 SELECT DISTINCT m.PAGO_VENTA_IMPORTE, m.PAGO_VENTA_MONEDA, m.PAGO_VENTA_COTIZACION, (SELECT DISTINCT p.id 
 																			FROM MANGO_DB.medio_pago p
-																			WHERE p.descripcion = m.PAGO_VENTA_MONEDA)
+																			WHERE p.descripcion = m.PAGO_VENTA_MONEDA) AS id_medio_pago
 FROM gd_esquema.Maestra m
 
+-- MANGO_DB.inmueble
+INSERT INTO MANGO_DB.inmueble (codigo, nombre, descripcion, direccion, superficie_total, antiguedad, expensas, 
+							   id_localidad, id_barrio, id_caracteristicas, id_tipo_inmueble, id_cantidad_ambientes,
+							   id_operacion, id_disposicion, id_estado, id_propietario)
+
+
+-- MANGO_DB.anuncio
+INSERT INTO MANGO_DB.anuncio (codigo, id_inmueble, id_agente, fecha_publicacion, precio_publicado,
+							  costo_anuncio, fecha_finalizacion, id_tipo_operacion, id_moneda, id_estado, 
+							  tipo_periodo)
+
+-- MANGO_DB.alquiler
+INSERT INTO MANGO_DB.alquiler (codigo, fecha_inicio, fecha_fin, cant_periodos, deposito, comision, gastos_averigua,
+							   estado, id_anuncio, id_inquilino, duracion)
+-- MANGO_DB.venta
+INSERT INTO MANGO_DB.venta (codigo, fecha, precio_venta, moneda, comision, id_anuncio, id_comprador,
+							id_pago_venta)
+
+-- MANGO_DB.pago_alquiler
+INSERT INTO MANGO_DB.pago_alquiler (codigo, id_alquiler, fecha_pago, fecha_vencimiento, nro_periodo, desc_periodo,
+									fec_ini, fec_fin, importe, id_medio_pago)
 
 /* ------- FIN MIGRACION DE DATOS ------- */
