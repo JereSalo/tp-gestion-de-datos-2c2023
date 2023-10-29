@@ -221,7 +221,6 @@ CREATE TABLE MANGO_DB.alquiler (
     estado NVARCHAR(100),
     id_anuncio NUMERIC(18,0) NOT NULL,
     id_inquilino NUMERIC(18,0) NOT NULL,
-    duracion NUMERIC(18,0),
     
     FOREIGN KEY (id_anuncio) REFERENCES MANGO_DB.anuncio(codigo),
     FOREIGN KEY (id_inquilino) REFERENCES MANGO_DB.inquilino(id)
@@ -435,58 +434,75 @@ FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_CODIGO IS NOT NULL
 
 
-
 -- MANGO_DB.anuncio
 -- FALTA id_inmueble, id_agente
 INSERT INTO MANGO_DB.anuncio (codigo, id_inmueble, id_agente, fecha_publicacion, precio_publicado,
 							  costo_anuncio, fecha_finalizacion, id_tipo_operacion, id_moneda, id_estado, 
 							  tipo_periodo)
-SELECT m.ANUNCIO_CODIGO, 
-	   --(SELECT * FROM MANGO_DB.inmueble),	-- agente e inmueble terminar
-	   --(SELECT * FROM MANGO_DB.agente),
+SELECT DISTINCT m.ANUNCIO_CODIGO, 
+	   (SELECT DISTINCT codigo FROM MANGO_DB.inmueble
+	   WHERE m.INMUEBLE_CODIGO = codigo) as cod_inmueble
+	   ,(SELECT id FROM MANGO_DB.agente 
+	   WHERE m.AGENTE_DNI = dni) as agente_dni,
 	   m.ANUNCIO_FECHA_PUBLICACION, m.ANUNCIO_PRECIO_PUBLICADO, m.ANUNCIO_COSTO_ANUNCIO,
 	   m.ANUNCIO_FECHA_FINALIZACION, 
 	   (SELECT id FROM MANGO_DB.tipo_operacion
-	   WHERE m.ANUNCIO_TIPO_OPERACION = tipo),
+	   WHERE m.ANUNCIO_TIPO_OPERACION = tipo) as tipo_operacion,
 	   (SELECT id FROM MANGO_DB.moneda
-	   WHERE m.ANUNCIO_MONEDA = descripcion),
-	   (SELECT id FROM MANGO_DB.estado
-	   WHERE m.ANUNCIO_ESTADO = estado),	   
+	   WHERE m.ANUNCIO_MONEDA = descripcion) as moneda,
+	   (SELECT id FROM MANGO_DB.estado_anuncio
+	   WHERE m.ANUNCIO_ESTADO = estado) as estado_anuncio,	   
 	   m.ANUNCIO_TIPO_PERIODO
 FROM gd_esquema.Maestra m
+WHERE m.INMUEBLE_CODIGO is not null
+
+-- No se si tengo mal cargados los datos pero esta query me da 0, o sea ese anuncio tiene como tipo_periodo un 0 cuando en realidad debería decir Periodo Mes o algo así...
+-- SELECT ANUNCIO_TIPO_PERIODO FROM gd_esquema.Maestra WHERE ANUNCIO_CODIGO = 1304
+
 
 -- MANGO_DB.alquiler
 -- FALTA ID_ANUNCIO, ID_INQUILINO, DURACION
 INSERT INTO MANGO_DB.alquiler (codigo, fecha_inicio, fecha_fin, cant_periodos, deposito, comision, gastos_averigua,
-							   estado, id_anuncio, id_inquilino, duracion)
-SELECT m.ALQUILER_CODIGO, m.ALQUILER_FECHA_INICIO, m.ALQUILER_FECHA_FIN, m.ALQUILER_CANT_PERIODOS,
-	   m.ALQUILER_DEPOSITO, m.ALQUILER_COMISION, m.ALQUILER_GASTOS_AVERIGUA, m.ALQUILER_ESTADO,
-	   --(SELECT * FROM MANGO_DB.anuncio),
-	   --(SELECT * FROM MANGO_DB.inquilino)
-	   --m.DURACION		xd? De donde sale
-
+							   estado, id_anuncio, id_inquilino)
+SELECT DISTINCT m.ALQUILER_CODIGO, m.ALQUILER_FECHA_INICIO, m.ALQUILER_FECHA_FIN, m.ALQUILER_CANT_PERIODOS,
+	   m.ALQUILER_DEPOSITO, m.ALQUILER_COMISION, m.ALQUILER_GASTOS_AVERIGUA, m.ALQUILER_ESTADO
+	   ,(SELECT codigo FROM MANGO_DB.anuncio WHERE m.ANUNCIO_CODIGO = codigo)
+	   ,(SELECT id FROM MANGO_DB.inquilino WHERE m.INQUILINO_DNI = dni AND m.INQUILINO_TELEFONO = telefono)
 FROM gd_esquema.Maestra m
+WHERE m.ALQUILER_CODIGO IS NOT NULL
+
+-- Hay un único caso de DNI repetido en el sistema, por eso el DNI no podría ser una PK, voy a comparar también con el teléfono
+-- SELECT * FROM MANGO_DB.inquilino WHERE dni = 81797777
+
 
 -- MANGO_DB.venta
 -- FALTA id_anuncio, id_comprador, id_pago_venta
 INSERT INTO MANGO_DB.venta (codigo, fecha, precio_venta, moneda, comision, id_anuncio, id_comprador,
 							id_pago_venta)
 SELECT m.VENTA_CODIGO, m.VENTA_FECHA, m.VENTA_PRECIO_VENTA, m.VENTA_MONEDA, m.VENTA_COMISION,
-	   (SELECT * FROM MANGO_DB.anuncio),
-	   (SELECT * FROM MANGO_DB.comprador),
-	   (SELECT * FROM MANGO_DB.pago_venta)
+	   (SELECT codigo FROM MANGO_DB.anuncio WHERE m.ANUNCIO_CODIGO = codigo)
+	   ,(SELECT id FROM MANGO_DB.comprador WHERE m.COMPRADOR_DNI = dni AND m.COMPRADOR_TELEFONO = telefono)
+	   -- ,(SELECT pv.id FROM MANGO_DB.pago_venta pv WHERE m.PAGO_VENTA_MEDIO_PAGO = pv.) -- Para mi la venta no debería tener pago_venta, debería ser al revés (capaz me equivoco)
 FROM gd_esquema.Maestra m
+WHERE m.VENTA_CODIGO IS NOT NULL
+
+-- testing
+
+SELECT * FROM gd_esquema.Maestra WHERE VENTA_CODIGO IS NOT NULL
+
+SELECT * FROM MANGO_DB.pago_venta
+
+
 
 -- MANGO_DB.pago_alquiler
--- FALTA id_alquiler
--- FALTA id_medio_pago, chequear
 INSERT INTO MANGO_DB.pago_alquiler (codigo, id_alquiler, fecha_pago, fecha_vencimiento, nro_periodo, desc_periodo,
 									fec_ini, fec_fin, importe, id_medio_pago)
 SELECT m.PAGO_ALQUILER_CODIGO,
-	   --(SELECT * FROM MANGO_DB.alquiler),
+	   (SELECT codigo FROM MANGO_DB.alquiler WHERE codigo = ALQUILER_CODIGO),
 	   m.PAGO_ALQUILER_FECHA, m.PAGO_ALQUILER_FECHA_VENCIMIENTO, m.PAGO_ALQUILER_NRO_PERIODO,
 	   m.PAGO_ALQUILER_FEC_INI, m.PAGO_ALQUILER_FEC_FIN, m.PAGO_ALQUILER_IMPORTE,
 	   (SELECT id FROM MANGO_DB.medio_pago
 	   WHERE descripcion = m.PAGO_ALQUILER_MEDIO_PAGO)
 FROM gd_esquema.Maestra m
+WHERE m.PAGO_ALQUILER_CODIGO IS NOT NULL
 /* ------- FIN MIGRACION DE DATOS ------- */
