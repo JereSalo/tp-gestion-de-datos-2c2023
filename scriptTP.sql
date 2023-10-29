@@ -6,15 +6,17 @@ BEGIN
     -- Crea el schema
 	DROP SCHEMA MANGO_DB
     EXEC('CREATE SCHEMA MANGO_DB;'); 
-    PRINT 'Esquema "MANGO_DB" creado con éxito.';
+    PRINT 'Esquema "MANGO_DB" creado con ï¿½xito.';
 END
 ELSE
 BEGIN
     PRINT 'El esquema "MANGO_DB" ya existe en la base de datos.';
 END
 
+EXEC MANGO_DB.BorrarTablas;
+
+
 /* ------- INICIO DE CREACION DE TABLAS ------- */
---Aclaracion importante: a las pk compuestas les puse numeros xq sino tira error xq se intentan sobreescribir
 
 CREATE TABLE MANGO_DB.tipo_inmueble (
 	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
@@ -201,7 +203,7 @@ CREATE TABLE MANGO_DB.anuncio (
     id_estado NUMERIC(18,0) NOT NULL,
     tipo_periodo NVARCHAR(100),
     
-    FOREIGN KEY (id_inmueble) REFERENCES MANGO_DB.inmueble(id),
+    FOREIGN KEY (id_inmueble) REFERENCES MANGO_DB.inmueble(codigo),
     FOREIGN KEY (id_agente) REFERENCES MANGO_DB.agente (id),
     FOREIGN KEY (id_tipo_operacion) REFERENCES MANGO_DB.tipo_operacion(id),
     FOREIGN KEY (id_moneda) REFERENCES MANGO_DB.moneda(id),
@@ -221,7 +223,7 @@ CREATE TABLE MANGO_DB.alquiler (
     id_inquilino NUMERIC(18,0) NOT NULL,
     duracion NUMERIC(18,0),
     
-    FOREIGN KEY (id_anuncio) REFERENCES MANGO_DB.anuncio(id),
+    FOREIGN KEY (id_anuncio) REFERENCES MANGO_DB.anuncio(codigo),
     FOREIGN KEY (id_inquilino) REFERENCES MANGO_DB.inquilino(id)
 );
 
@@ -235,7 +237,7 @@ CREATE TABLE MANGO_DB.venta (
     id_comprador NUMERIC(18,0) NOT NULL,
     id_pago_venta NUMERIC(18,0) NOT NULL,
     
-    FOREIGN KEY (id_anuncio) REFERENCES MANGO_DB.anuncio(id),
+    FOREIGN KEY (id_anuncio) REFERENCES MANGO_DB.anuncio(codigo),
     FOREIGN KEY (id_comprador) REFERENCES MANGO_DB.comprador(id),
     FOREIGN KEY (id_pago_venta) REFERENCES MANGO_DB.pago_venta(id)
 );
@@ -252,7 +254,7 @@ CREATE TABLE MANGO_DB.pago_alquiler (
     importe NUMERIC(18,0),
     id_medio_pago NUMERIC(18,0) NOT NULL,
     
-    FOREIGN KEY (id_alquiler) REFERENCES MANGO_DB.alquiler(id),
+    FOREIGN KEY (id_alquiler) REFERENCES MANGO_DB.alquiler(codigo),
     FOREIGN KEY (id_medio_pago) REFERENCES MANGO_DB.medio_pago(id)
 );
 
@@ -348,7 +350,7 @@ FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_LOCALIDAD IS NOT NULL
 
 -- MANGO_DB.sucursal
--- Hay que hacer lo mismo que en localidad pero para ver en que localidad está la direccion
+-- Hay que hacer lo mismo que en localidad pero para ver en que localidad estï¿½ la direccion
 INSERT INTO MANGO_DB.sucursal (id, nombre, direccion, telefono, id_localidad)
 SELECT m.SUCURSAL_CODIGO, m.SUCURSAL_NOMBRE, m.SUCURSAL_DIRECCION, m.SUCURSAL_TELEFONO, (SELECT id 
 																						 FROM MANGO_DB.localidad) 
