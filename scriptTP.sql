@@ -172,7 +172,7 @@ CREATE TABLE MANGO_DB.inmueble (
     id_caracteristicas NUMERIC(18,0) NOT NULL,
     id_tipo_inmueble NUMERIC(18,0) NOT NULL,
     id_cantidad_ambientes NUMERIC(18,0) NOT NULL,
-    id_operacion NUMERIC(18,0) NOT NULL,
+    id_orientacion NUMERIC(18,0) NOT NULL,
     id_disposicion NUMERIC(18,0) NOT NULL,
     id_estado NUMERIC(18,0) NOT NULL,
     id_propietario NUMERIC(18,0) NOT NULL,
@@ -182,7 +182,7 @@ CREATE TABLE MANGO_DB.inmueble (
     FOREIGN KEY (id_caracteristicas) REFERENCES MANGO_DB.caracteristicas_inmueble(id),
     FOREIGN KEY (id_tipo_inmueble) REFERENCES MANGO_DB.tipo_inmueble(id),
     FOREIGN KEY (id_cantidad_ambientes) REFERENCES MANGO_DB.ambientes(id),
-    FOREIGN KEY (id_operacion) REFERENCES MANGO_DB.tipo_operacion(id),
+    FOREIGN KEY (id_orientacion) REFERENCES MANGO_DB.orientacion(id),
     FOREIGN KEY (id_disposicion) REFERENCES MANGO_DB.disposicion(id),
     FOREIGN KEY (id_estado) REFERENCES MANGO_DB.estado(id),
     FOREIGN KEY (id_propietario) REFERENCES MANGO_DB.propietario(id)
@@ -383,25 +383,86 @@ SELECT DISTINCT m.PAGO_VENTA_IMPORTE, m.PAGO_VENTA_MONEDA, m.PAGO_VENTA_COTIZACI
 FROM gd_esquema.Maestra m
 
 -- MANGO_DB.inmueble
+-- FALTA id_localidad, usar procedure
+-- FALTA SUBQUERY PARA PROPIETARIO
 INSERT INTO MANGO_DB.inmueble (codigo, nombre, descripcion, direccion, superficie_total, antiguedad, expensas, 
 							   id_localidad, id_barrio, id_caracteristicas, id_tipo_inmueble, id_cantidad_ambientes,
 							   id_operacion, id_disposicion, id_estado, id_propietario)
+SELECT m.INMUEBLE_CODIGO, m.INMUEBLE_NOMBRE, m.INMUEBLE_DESCRIPCION, m.INMUEBLE_DIRECCION, m.INMUEBLE_SUPERFICIETOTAL,
+	   m.INMUEBLE_ANTIGUEDAD, INMUEBLE_EXPESAS, (SELECT b.id
+												 FROM MANGO_DB.barrio b
+												 WHERE m.INMUEBLE_BARRIO = nombre),
+	   (SELECT c.id
+	   FROM MANGO_DB.caracteristicas_inmueble c
+	   WHERE m.INMUEBLE_CARACTERISTICA_WIFI = c.wifi AND m.INMUEBLE_CARACTERISTICA_CABLE = c.cable AND
+	   m.INMUEBLE_CARACTERISTICA_CALEFACCION = c.cable AND m.INMUEBLE_CARACTERISTICA_GAS = c.gas),
+	   (SELECT id 
+	   FROM MANGO_DB.tipo_inmueble
+	   WHERE m.INMUEBLE_TIPO_INMUEBLE = tipo),
+	   (SELECT id FROM MANGO_DB.ambientes
+	   WHERE m.INMUEBLE_CANT_AMBIENTES = detalle),
+	   (SELECT id FROM MANGO_DB.orientacion
+	   WHERE m.INMUEBLE_ORIENTACION = orientacion),
+	   (SELECT id FROM MANGO_DB.disposicion
+	   WHERE m.INMUEBLE_DISPOSICION = disposicion),
+	   (SELECT id FROM MANGO_DB.estado
+	   WHERE m.INMUEBLE_ESTADO = estado)
+	   --(SELECT id FROM MANGO_DB.propietario
+	   --WHERE m.PROP = nombre)
 
+FROM gd_esquema.Maestra m
 
 -- MANGO_DB.anuncio
+-- FALTA id_inmueble, id_agente
 INSERT INTO MANGO_DB.anuncio (codigo, id_inmueble, id_agente, fecha_publicacion, precio_publicado,
 							  costo_anuncio, fecha_finalizacion, id_tipo_operacion, id_moneda, id_estado, 
 							  tipo_periodo)
+SELECT m.ANUNCIO_CODIGO, 
+	   --(SELECT * FROM MANGO_DB.inmueble),	-- agente e inmueble terminar
+	   --(SELECT * FROM MANGO_DB.agente),
+	   m.ANUNCIO_FECHA_PUBLICACION, m.ANUNCIO_PRECIO_PUBLICADO, m.ANUNCIO_COSTO_ANUNCIO,
+	   m.ANUNCIO_FECHA_FINALIZACION, 
+	   (SELECT id FROM MANGO_DB.tipo_operacion
+	   WHERE m.ANUNCIO_TIPO_OPERACION = tipo),
+	   (SELECT id FROM MANGO_DB.moneda
+	   WHERE m.ANUNCIO_MONEDA = descripcion),
+	   (SELECT id FROM MANGO_DB.estado
+	   WHERE m.ANUNCIO_ESTADO = estado),	   
+	   m.ANUNCIO_TIPO_PERIODO
+FROM gd_esquema.Maestra m
 
 -- MANGO_DB.alquiler
+-- FALTA ID_ANUNCIO, ID_INQUILINO, DURACION
 INSERT INTO MANGO_DB.alquiler (codigo, fecha_inicio, fecha_fin, cant_periodos, deposito, comision, gastos_averigua,
 							   estado, id_anuncio, id_inquilino, duracion)
+SELECT m.ALQUILER_CODIGO, m.ALQUILER_FECHA_INICIO, m.ALQUILER_FECHA_FIN, m.ALQUILER_CANT_PERIODOS,
+	   m.ALQUILER_DEPOSITO, m.ALQUILER_COMISION, m.ALQUILER_GASTOS_AVERIGUA, m.ALQUILER_ESTADO,
+	   --(SELECT * FROM MANGO_DB.anuncio),
+	   --(SELECT * FROM MANGO_DB.inquilino)
+	   --m.DURACION		xd? De donde sale
+
+FROM gd_esquema.Maestra m
+
 -- MANGO_DB.venta
+-- FALTA id_anuncio, id_comprador, id_pago_venta
 INSERT INTO MANGO_DB.venta (codigo, fecha, precio_venta, moneda, comision, id_anuncio, id_comprador,
 							id_pago_venta)
+SELECT m.VENTA_CODIGO, m.VENTA_FECHA, m.VENTA_PRECIO_VENTA, m.VENTA_MONEDA, m.VENTA_COMISION,
+	   (SELECT * FROM MANGO_DB.anuncio),
+	   (SELECT * FROM MANGO_DB.comprador),
+	   (SELECT * FROM MANGO_DB.pago_venta)
+FROM gd_esquema.Maestra m
 
 -- MANGO_DB.pago_alquiler
+-- FALTA id_alquiler
+-- FALTA id_medio_pago, chequear
 INSERT INTO MANGO_DB.pago_alquiler (codigo, id_alquiler, fecha_pago, fecha_vencimiento, nro_periodo, desc_periodo,
 									fec_ini, fec_fin, importe, id_medio_pago)
-
+SELECT m.PAGO_ALQUILER_CODIGO,
+	   --(SELECT * FROM MANGO_DB.alquiler),
+	   m.PAGO_ALQUILER_FECHA, m.PAGO_ALQUILER_FECHA_VENCIMIENTO, m.PAGO_ALQUILER_NRO_PERIODO,
+	   m.PAGO_ALQUILER_FEC_INI, m.PAGO_ALQUILER_FEC_FIN, m.PAGO_ALQUILER_IMPORTE,
+	   (SELECT id FROM MANGO_DB.medio_pago
+	   WHERE descripcion = m.PAGO_ALQUILER_MEDIO_PAGO)
+FROM gd_esquema.Maestra m
 /* ------- FIN MIGRACION DE DATOS ------- */

@@ -707,7 +707,7 @@
 									"top": 789,
 									"width": 224.060546875,
 									"height": 13,
-									"text": "dispocision"
+									"text": "disposicion"
 								},
 								{
 									"_type": "ERDColumnCompartmentView",
@@ -5865,7 +5865,7 @@
 					"_parent": {
 						"$ref": "AAAAAAFLzntJC6EktCk="
 					},
-					"name": "dispocision",
+					"name": "disposicion",
 					"ownedElements": [
 						{
 							"_type": "ERDRelationship",
