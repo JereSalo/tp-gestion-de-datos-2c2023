@@ -260,7 +260,6 @@ CREATE TABLE MANGO_DB.pago_alquiler (
 /* ------- FIN DE CREACION DE TABLAS ------- */
 
 /* ------- INICIO MIGRACION DE DATOS ------- */
--- SELECT * FROM gd_esquema.Maestra
 
 -- MANGO_DB.tipo_inmueble
 INSERT INTO MANGO_DB.tipo_inmueble (tipo)
@@ -343,14 +342,6 @@ FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_PROVINCIA IS NOT NULL
 
 -- MANGO_DB.localidad 
--- (ESTO HAY QUE HACERLO CON CURSORES O UNA FUNCION PARA VER DE QUE PROVINCIA ES CADA LOCALIDAD). Lo hice con una subquery, ta mal?
-/*
-INSERT INTO MANGO_DB.localidad (nombre, id_provincia)
-SELECT DISTINCT m.INMUEBLE_LOCALIDAD, (SELECT id FROM MANGO_DB.provincia p WHERE p.nombre = m.INMUEBLE_PROVINCIA)
-FROM gd_esquema.Maestra m
-WHERE m.INMUEBLE_LOCALIDAD IS NOT NULL
-*/
-
 INSERT INTO MANGO_DB.localidad (nombre, id_provincia)
 SELECT DISTINCT m.INMUEBLE_LOCALIDAD as nombre, (SELECT id FROM MANGO_DB.provincia p WHERE p.nombre = m.INMUEBLE_PROVINCIA) as id_provincia
 FROM gd_esquema.Maestra m
@@ -383,19 +374,12 @@ FROM gd_esquema.Maestra m
 WHERE m.PAGO_VENTA_MEDIO_PAGO IS NOT NULL
 
 -- MANGO_DB.comprador
--- CHEQUEAR A QUIEN HAY QUE HACERLE DISTINCT, TAL VEZ AL DNI?
 INSERT INTO MANGO_DB.comprador (nombre, apellido, dni, fecha_registro, telefono, mail, fecha_nac)
 SELECT DISTINCT m.COMPRADOR_NOMBRE, m.COMPRADOR_APELLIDO, m.COMPRADOR_DNI, m.COMPRADOR_FECHA_REGISTRO, m.COMPRADOR_TELEFONO, m.COMPRADOR_MAIL, m.COMPRADOR_FECHA_NAC
 FROM gd_esquema.Maestra m
 WHERE m.COMPRADOR_DNI IS NOT NULL
 
-
-
-
-
 -- MANGO_DB.inmueble
--- FALTA id_localidad, usar procedure
--- FALTA SUBQUERY PARA PROPIETARIO
 INSERT INTO MANGO_DB.inmueble (codigo, nombre, descripcion, direccion, superficie_total, antiguedad, expensas, 
 							   id_localidad, id_barrio, id_caracteristicas, id_tipo_inmueble, id_cantidad_ambientes,
 							   id_orientacion, id_disposicion, id_estado, id_propietario)
@@ -429,7 +413,6 @@ WHERE m.INMUEBLE_CODIGO IS NOT NULL
 
 
 -- MANGO_DB.anuncio
--- FALTA id_inmueble, id_agente
 INSERT INTO MANGO_DB.anuncio (codigo, id_inmueble, id_agente, fecha_publicacion, precio_publicado,
 							  costo_anuncio, fecha_finalizacion, id_tipo_operacion, id_moneda, id_estado, 
 							  tipo_periodo)
@@ -455,7 +438,6 @@ WHERE m.INMUEBLE_CODIGO is not null
 
 
 -- MANGO_DB.alquiler
--- FALTA ID_ANUNCIO, ID_INQUILINO, DURACION
 INSERT INTO MANGO_DB.alquiler (codigo, fecha_inicio, fecha_fin, cant_periodos, deposito, comision, gastos_averigua,
 							   estado, id_anuncio, id_inquilino)
 SELECT DISTINCT m.ALQUILER_CODIGO, m.ALQUILER_FECHA_INICIO, m.ALQUILER_FECHA_FIN, m.ALQUILER_CANT_PERIODOS,
@@ -468,9 +450,8 @@ WHERE m.ALQUILER_CODIGO IS NOT NULL
 -- Hay un único caso de DNI repetido en el sistema, por eso el DNI no podría ser una PK, voy a comparar también con el teléfono
 -- SELECT * FROM MANGO_DB.inquilino WHERE dni = 81797777
 
-
 -- MANGO_DB.venta
--- FALTA id_anuncio, id_comprador, id_pago_venta
+-- FALTA id_pago_venta
 INSERT INTO MANGO_DB.venta (codigo, fecha, precio_venta, moneda, comision, id_anuncio, id_comprador)
 SELECT DISTINCT m.VENTA_CODIGO, m.VENTA_FECHA, m.VENTA_PRECIO_VENTA, m.VENTA_MONEDA, m.VENTA_COMISION,
 	   (SELECT codigo FROM MANGO_DB.anuncio WHERE m.ANUNCIO_CODIGO = codigo)
@@ -478,7 +459,6 @@ SELECT DISTINCT m.VENTA_CODIGO, m.VENTA_FECHA, m.VENTA_PRECIO_VENTA, m.VENTA_MON
 	   -- ,(SELECT pv.id FROM MANGO_DB.pago_venta pv WHERE m.PAGO_VENTA_MEDIO_PAGO = pv.) -- Para mi la venta no debería tener pago_venta, debería ser al revés (capaz me equivoco)
 FROM gd_esquema.Maestra m
 WHERE m.VENTA_CODIGO IS NOT NULL
-
 
 -- MANGO_DB.pago_venta 
 INSERT INTO MANGO_DB.pago_venta (importe, moneda, cotizacion, id_medio_pago, cod_venta)
