@@ -66,6 +66,9 @@ CREATE TABLE MANGO_DB.propietario (
 	fecha_nac DATETIME
 );
 
+CREATE INDEX ix1_pago_propietario ON MANGO_DB.propietario (dni);
+
+
 CREATE TABLE MANGO_DB.moneda (
 	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
 	descripcion NVARCHAR(100)
@@ -103,6 +106,8 @@ CREATE TABLE MANGO_DB.inquilino (
 	fecha_nac DATETIME
 );
 
+CREATE INDEX ix1_inquilino ON MANGO_DB.inquilino (apellido, dni);
+
 CREATE TABLE MANGO_DB.provincia (
 	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY, --Con el identiti hago que sea autoincremental, empieza en 1 y suma de a 1
 	nombre NVARCHAR(100)
@@ -134,6 +139,8 @@ CREATE TABLE MANGO_DB.detalle_alq (
     nro_periodo_in NUMERIC(18,0)
 );
 
+CREATE INDEX ix1_detalle_alq ON MANGO_DB.detalle_alq (cod_alquiler);
+
 CREATE TABLE MANGO_DB.medio_pago (
 	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
 	descripcion NVARCHAR(100)
@@ -150,6 +157,7 @@ CREATE TABLE MANGO_DB.comprador (
 	fecha_nac DATETIME
 );
 
+CREATE INDEX ix1_comprador ON MANGO_DB.comprador (fecha_registro);
 
 CREATE TABLE MANGO_DB.inmueble (
     codigo NUMERIC(18,0) PRIMARY KEY,
@@ -180,6 +188,8 @@ CREATE TABLE MANGO_DB.inmueble (
     FOREIGN KEY (id_propietario) REFERENCES MANGO_DB.propietario(id)
 );
 
+CREATE INDEX ix1_inmueble ON MANGO_DB.inmueble (direccion, id_barrio, id_propietario, id_cantidad_ambientes);
+
 CREATE TABLE MANGO_DB.anuncio (
     codigo NUMERIC(18,0) PRIMARY KEY,
     id_inmueble NUMERIC(18,0) NOT NULL,
@@ -200,6 +210,8 @@ CREATE TABLE MANGO_DB.anuncio (
     FOREIGN KEY (id_estado) REFERENCES MANGO_DB.estado(id)
 );
 
+CREATE INDEX ix1_anuncio ON MANGO_DB.anuncio (id_inmueble, id_agente, id_tipo_operacion);
+
 CREATE TABLE MANGO_DB.alquiler (
     codigo NUMERIC(18,0) PRIMARY KEY,
     fecha_inicio DATETIME,
@@ -216,6 +228,8 @@ CREATE TABLE MANGO_DB.alquiler (
     FOREIGN KEY (id_inquilino) REFERENCES MANGO_DB.inquilino(id)
 );
 
+CREATE INDEX ix1_alquiler ON MANGO_DB.alquiler (estado);
+
 CREATE TABLE MANGO_DB.venta (
     codigo NUMERIC(18,0) PRIMARY KEY,
     fecha DATETIME,
@@ -229,6 +243,8 @@ CREATE TABLE MANGO_DB.venta (
     FOREIGN KEY (id_comprador) REFERENCES MANGO_DB.comprador(id)
 );
 
+CREATE INDEX ix1_venta ON MANGO_DB.venta (id_anuncio, id_comprador);
+
 CREATE TABLE MANGO_DB.pago_venta (
     id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
     importe NUMERIC(18,2),
@@ -240,6 +256,8 @@ CREATE TABLE MANGO_DB.pago_venta (
     FOREIGN KEY (id_medio_pago) REFERENCES MANGO_DB.medio_pago(id),
 	FOREIGN KEY (cod_venta) REFERENCES MANGO_DB.venta(codigo)
 );
+
+CREATE INDEX ix1_pago_venta ON MANGO_DB.pago_venta (cod_venta);
 
 CREATE TABLE MANGO_DB.pago_alquiler (
 	codigo NUMERIC(18,0) PRIMARY KEY,
@@ -255,6 +273,8 @@ CREATE TABLE MANGO_DB.pago_alquiler (
     FOREIGN KEY (id_alquiler) REFERENCES MANGO_DB.alquiler(codigo),
     FOREIGN KEY (id_medio_pago) REFERENCES MANGO_DB.medio_pago(id)
 );
+
+CREATE INDEX ix1_pago_alquiler ON MANGO_DB.pago_alquiler (id_alquiler, id_medio_pago, fecha_pago, fecha_vencimiento);
 
 /* ------- FIN DE CREACION DE TABLAS ------- */
 
@@ -273,7 +293,7 @@ FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_ESTADO IS NOT NULL
 
 -- MANGO_DB.ambientes
-INSERT INTO MANGO_DB.ambientes (detalle)
+INSERT INTO MANGO_DB.ambientes ()
 SELECT DISTINCT m.INMUEBLE_CANT_AMBIENTES
 FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_CANT_AMBIENTES IS NOT NULL
