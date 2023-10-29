@@ -261,7 +261,7 @@ CREATE TABLE MANGO_DB.pago_alquiler (
 /* ------- FIN DE CREACION DE TABLAS ------- */
 
 /* ------- INICIO MIGRACION DE DATOS ------- */
-SELECT * FROM gd_esquema.Maestra
+-- SELECT * FROM gd_esquema.Maestra
 
 -- MANGO_DB.tipo_inmueble
 INSERT INTO MANGO_DB.tipo_inmueble (tipo)
@@ -303,6 +303,7 @@ WHERE m.INMUEBLE_CODIGO IS NOT NULL
 INSERT INTO MANGO_DB.barrio (nombre)
 SELECT DISTINCT m.INMUEBLE_BARRIO
 FROM gd_esquema.Maestra m
+WHERE m.INMUEBLE_BARRIO IS NOT NULL
 
 -- MANGO_DB.propietario
 INSERT INTO MANGO_DB.propietario (dni, nombre, apellido, fecha_registro, telefono, mail, fecha_nac)
@@ -343,18 +344,31 @@ FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_PROVINCIA IS NOT NULL
 
 -- MANGO_DB.localidad 
--- (ESTO HAY QUE HACERLO CON CURSORES O UNA FUNCION PARA VER DE QUE PROVINCIA ES CADA LOCALIDAD)
+-- (ESTO HAY QUE HACERLO CON CURSORES O UNA FUNCION PARA VER DE QUE PROVINCIA ES CADA LOCALIDAD). Lo hice con una subquery, ta mal?
+/*
 INSERT INTO MANGO_DB.localidad (nombre, id_provincia)
-SELECT DISTINCT m.INMUEBLE_LOCALIDAD, m.INMUEBLE_PROVINCIA
+SELECT DISTINCT m.INMUEBLE_LOCALIDAD, (SELECT id FROM MANGO_DB.provincia p WHERE p.nombre = m.INMUEBLE_PROVINCIA)
 FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_LOCALIDAD IS NOT NULL
+*/
+
+INSERT INTO MANGO_DB.localidad (nombre, id_provincia)
+SELECT DISTINCT m.INMUEBLE_LOCALIDAD as nombre, (SELECT id FROM MANGO_DB.provincia p WHERE p.nombre = m.INMUEBLE_PROVINCIA) as id_provincia
+FROM gd_esquema.Maestra m
+WHERE m.INMUEBLE_LOCALIDAD is not null
+UNION
+SELECT DISTINCT m.SUCURSAL_LOCALIDAD, (SELECT id FROM MANGO_DB.provincia p WHERE p.nombre = m.SUCURSAL_PROVINCIA)
+FROM gd_esquema.Maestra m
+WHERE m.SUCURSAL_LOCALIDAD is not null
+ORDER BY 1
 
 -- MANGO_DB.sucursal
--- Hay que hacer lo mismo que en localidad pero para ver en que localidad est� la direccion
-INSERT INTO MANGO_DB.sucursal (id, nombre, direccion, telefono, id_localidad)
-SELECT m.SUCURSAL_CODIGO, m.SUCURSAL_NOMBRE, m.SUCURSAL_DIRECCION, m.SUCURSAL_TELEFONO, (SELECT id 
-																						 FROM MANGO_DB.localidad) 
+SET IDENTITY_INSERT MANGO_DB.sucursal ON;
+INSERT INTO MANGO_DB.sucursal (codigo, nombre, direccion, telefono, id_localidad)
+SELECT DISTINCT m.SUCURSAL_CODIGO, m.SUCURSAL_NOMBRE, m.SUCURSAL_DIRECCION, m.SUCURSAL_TELEFONO
+, (SELECT id FROM MANGO_DB.localidad l WHERE m.SUCURSAL_LOCALIDAD = l.nombre AND m.SUCURSAL_PROVINCIA = (SELECT nombre FROM MANGO_DB.provincia p WHERE p.id = l.id_provincia)) as id_localidad
 FROM gd_esquema.Maestra m
+SET IDENTITY_INSERT MANGO_DB.sucursal OFF;
 
 -- MANGO_DB.detalle_alq
 -- Chequear CAMPOS NULL, QUE HACEMOS??? PUSE EL WHERE PARA ANULAR ESO, CHEQUEAR ENUNCIADO
@@ -372,24 +386,26 @@ WHERE m.PAGO_VENTA_MEDIO_PAGO IS NOT NULL
 -- MANGO_DB.comprador
 -- CHEQUEAR A QUIEN HAY QUE HACERLE DISTINCT, TAL VEZ AL DNI?
 INSERT INTO MANGO_DB.comprador (nombre, apellido, dni, fecha_registro, telefono, mail, fecha_nac)
-SELECT DISTINCT m.COMPRADOR_NOMBRE, m.COMPRADOR_APELLIDO, m.COMPRADOR_DNI, m.COMPRADOR_FECHA_REGISTRO, m.COMPRADOR_FECHA_NAC
+SELECT DISTINCT m.COMPRADOR_NOMBRE, m.COMPRADOR_APELLIDO, m.COMPRADOR_DNI, m.COMPRADOR_FECHA_REGISTRO, m.COMPRADOR_TELEFONO, m.COMPRADOR_MAIL, m.COMPRADOR_FECHA_NAC
 FROM gd_esquema.Maestra m
 WHERE m.COMPRADOR_DNI IS NOT NULL
 
+
 -- MANGO_DB.pago_venta 
--- CHEQUEAR subquery para FK, parece que sirve a simple vista
 INSERT INTO MANGO_DB.pago_venta (importe, moneda, cotizacion, id_medio_pago)
-SELECT DISTINCT m.PAGO_VENTA_IMPORTE, m.PAGO_VENTA_MONEDA, m.PAGO_VENTA_COTIZACION, (SELECT DISTINCT p.id 
-																			FROM MANGO_DB.medio_pago p
-																			WHERE p.descripcion = m.PAGO_VENTA_MONEDA) AS id_medio_pago
+SELECT DISTINCT m.PAGO_VENTA_IMPORTE, (SELECT DISTINCT mo.id FROM MANGO_DB.moneda mo WHERE mo.descripcion = m.PAGO_VENTA_MONEDA) as id_moneda, m.PAGO_VENTA_COTIZACION, (SELECT DISTINCT mp.id 
+																			FROM MANGO_DB.medio_pago mp
+																			WHERE mp.descripcion = m.PAGO_VENTA_MEDIO_PAGO) AS id_medio_pago
 FROM gd_esquema.Maestra m
+WHERE m.PAGO_VENTA_IMPORTE IS NOT NULL
+
 
 -- MANGO_DB.inmueble
 -- FALTA id_localidad, usar procedure
 -- FALTA SUBQUERY PARA PROPIETARIO
 INSERT INTO MANGO_DB.inmueble (codigo, nombre, descripcion, direccion, superficie_total, antiguedad, expensas, 
 							   id_localidad, id_barrio, id_caracteristicas, id_tipo_inmueble, id_cantidad_ambientes,
-							   id_operacion, id_disposicion, id_estado, id_propietario)
+							   id_orientacion, id_disposicion, id_estado, id_propietario)
 SELECT m.INMUEBLE_CODIGO, m.INMUEBLE_NOMBRE, m.INMUEBLE_DESCRIPCION, m.INMUEBLE_DIRECCION, m.INMUEBLE_SUPERFICIETOTAL,
 	   m.INMUEBLE_ANTIGUEDAD, INMUEBLE_EXPESAS, (SELECT b.id
 												 FROM MANGO_DB.barrio b
