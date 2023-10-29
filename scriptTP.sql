@@ -406,29 +406,35 @@ WHERE m.PAGO_VENTA_IMPORTE IS NOT NULL
 INSERT INTO MANGO_DB.inmueble (codigo, nombre, descripcion, direccion, superficie_total, antiguedad, expensas, 
 							   id_localidad, id_barrio, id_caracteristicas, id_tipo_inmueble, id_cantidad_ambientes,
 							   id_orientacion, id_disposicion, id_estado, id_propietario)
-SELECT m.INMUEBLE_CODIGO, m.INMUEBLE_NOMBRE, m.INMUEBLE_DESCRIPCION, m.INMUEBLE_DIRECCION, m.INMUEBLE_SUPERFICIETOTAL,
-	   m.INMUEBLE_ANTIGUEDAD, INMUEBLE_EXPESAS, (SELECT b.id
-												 FROM MANGO_DB.barrio b
-												 WHERE m.INMUEBLE_BARRIO = nombre),
-	   (SELECT c.id
+SELECT DISTINCT m.INMUEBLE_CODIGO, m.INMUEBLE_NOMBRE, m.INMUEBLE_DESCRIPCION, m.INMUEBLE_DIRECCION, m.INMUEBLE_SUPERFICIETOTAL,
+	   m.INMUEBLE_ANTIGUEDAD, INMUEBLE_EXPESAS
+	   ,(SELECT l.id
+		FROM MANGO_DB.localidad l JOIN MANGO_DB.provincia p ON l.id_provincia = p.id
+		WHERE m.INMUEBLE_LOCALIDAD = l.nombre AND m.INMUEBLE_PROVINCIA = p.nombre)
+	   ,(SELECT b.id
+		FROM MANGO_DB.barrio b
+		WHERE m.INMUEBLE_BARRIO = nombre)
+	   ,(SELECT c.id
 	   FROM MANGO_DB.caracteristicas_inmueble c
 	   WHERE m.INMUEBLE_CARACTERISTICA_WIFI = c.wifi AND m.INMUEBLE_CARACTERISTICA_CABLE = c.cable AND
-	   m.INMUEBLE_CARACTERISTICA_CALEFACCION = c.cable AND m.INMUEBLE_CARACTERISTICA_GAS = c.gas),
-	   (SELECT id 
+	   m.INMUEBLE_CARACTERISTICA_CALEFACCION = c.calefaccion AND m.INMUEBLE_CARACTERISTICA_GAS = c.gas)
+	   ,(SELECT id 
 	   FROM MANGO_DB.tipo_inmueble
-	   WHERE m.INMUEBLE_TIPO_INMUEBLE = tipo),
-	   (SELECT id FROM MANGO_DB.ambientes
+	   WHERE m.INMUEBLE_TIPO_INMUEBLE = tipo)
+	   ,(SELECT id FROM MANGO_DB.ambientes
 	   WHERE m.INMUEBLE_CANT_AMBIENTES = detalle),
 	   (SELECT id FROM MANGO_DB.orientacion
-	   WHERE m.INMUEBLE_ORIENTACION = orientacion),
-	   (SELECT id FROM MANGO_DB.disposicion
-	   WHERE m.INMUEBLE_DISPOSICION = disposicion),
-	   (SELECT id FROM MANGO_DB.estado
+	   WHERE m.INMUEBLE_ORIENTACION = orientacion)
+	   ,(SELECT id FROM MANGO_DB.disposicion
+	   WHERE m.INMUEBLE_DISPOSICION = disposicion)
+	   ,(SELECT id FROM MANGO_DB.estado
 	   WHERE m.INMUEBLE_ESTADO = estado)
-	   --(SELECT id FROM MANGO_DB.propietario
-	   --WHERE m.PROP = nombre)
-
+	   ,(SELECT id FROM MANGO_DB.propietario P
+	   WHERE m.PROPIETARIO_DNI = P.dni)
 FROM gd_esquema.Maestra m
+WHERE m.INMUEBLE_CODIGO IS NOT NULL
+
+
 
 -- MANGO_DB.anuncio
 -- FALTA id_inmueble, id_agente
