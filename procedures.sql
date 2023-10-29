@@ -68,8 +68,8 @@ BEGIN
 	DECLARE @nombreTabla NVARCHAR(MAX);
 
 	DECLARE table_cursor CURSOR FOR
-	SELECT ('[MANGO_DB].[' + name + ']')
-	FROM sys.tables;
+	SELECT ('[MANGO_DB].[' + name + ']') FROM sys.tables tab
+	WHERE tab.schema_id = (SELECT schema_id FROM sys.schemas sch WHERE sch.name = 'MANGO_DB')
 
 	OPEN table_cursor;
 
