@@ -4,7 +4,7 @@ USE GD2C2023
 IF NOT EXISTS (SELECT schema_id FROM sys.schemas WHERE name = 'MANGO_DB')
 BEGIN
     -- Crea el schema
-	DROP SCHEMA MANGO_DB
+	--DROP SCHEMA MANGO_DB
     EXEC('CREATE SCHEMA MANGO_DB;'); 
     PRINT 'Esquema "MANGO_DB" creado con �xito.';
 END
@@ -12,9 +12,8 @@ ELSE
 BEGIN
     PRINT 'El esquema "MANGO_DB" ya existe en la base de datos.';
 END
-
-EXEC MANGO_DB.BorrarTablas;
-
+--DROP PROCEDURE MANGO_DB.BorrarTablas
+--EXEC MANGO_DB.BorrarTablas;
 
 /* ------- INICIO DE CREACION DE TABLAS ------- */
 
