@@ -151,15 +151,6 @@ CREATE TABLE MANGO_DB.comprador (
 	fecha_nac DATETIME
 );
 
-CREATE TABLE MANGO_DB.pago_venta (
-    id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
-    importe NUMERIC(18,2),
-    moneda NVARCHAR(100),
-    cotizacion NUMERIC(18,2),
-    id_medio_pago NUMERIC(18,0) NOT NULL,
-    
-    FOREIGN KEY (id_medio_pago) REFERENCES MANGO_DB.medio_pago(id)
-);
 
 CREATE TABLE MANGO_DB.inmueble (
     codigo NUMERIC(18,0) PRIMARY KEY,
@@ -234,11 +225,21 @@ CREATE TABLE MANGO_DB.venta (
     comision NUMERIC(18,2),
     id_anuncio NUMERIC(18,0) NOT NULL,
     id_comprador NUMERIC(18,0) NOT NULL,
-    id_pago_venta NUMERIC(18,0) NOT NULL,
     
     FOREIGN KEY (id_anuncio) REFERENCES MANGO_DB.anuncio(codigo),
-    FOREIGN KEY (id_comprador) REFERENCES MANGO_DB.comprador(id),
-    FOREIGN KEY (id_pago_venta) REFERENCES MANGO_DB.pago_venta(id)
+    FOREIGN KEY (id_comprador) REFERENCES MANGO_DB.comprador(id)
+);
+
+CREATE TABLE MANGO_DB.pago_venta (
+    id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
+    importe NUMERIC(18,2),
+    moneda NVARCHAR(100),
+    cotizacion NUMERIC(18,2),
+    id_medio_pago NUMERIC(18,0) NOT NULL,
+	cod_venta NUMERIC(18,0) NOT NULL,
+    
+    FOREIGN KEY (id_medio_pago) REFERENCES MANGO_DB.medio_pago(id),
+	FOREIGN KEY (cod_venta) REFERENCES MANGO_DB.venta(codigo)
 );
 
 CREATE TABLE MANGO_DB.pago_alquiler (
@@ -247,7 +248,6 @@ CREATE TABLE MANGO_DB.pago_alquiler (
     fecha_pago DATETIME,
     fecha_vencimiento DATETIME,
     nro_periodo NUMERIC(18,0),
-    desc_periodo NVARCHAR(100),
     fec_ini DATETIME,
     fec_fin DATETIME,
     importe NUMERIC(18,0),
@@ -390,13 +390,7 @@ FROM gd_esquema.Maestra m
 WHERE m.COMPRADOR_DNI IS NOT NULL
 
 
--- MANGO_DB.pago_venta 
-INSERT INTO MANGO_DB.pago_venta (importe, moneda, cotizacion, id_medio_pago)
-SELECT DISTINCT m.PAGO_VENTA_IMPORTE, (SELECT DISTINCT mo.id FROM MANGO_DB.moneda mo WHERE mo.descripcion = m.PAGO_VENTA_MONEDA) as id_moneda, m.PAGO_VENTA_COTIZACION, (SELECT DISTINCT mp.id 
-																			FROM MANGO_DB.medio_pago mp
-																			WHERE mp.descripcion = m.PAGO_VENTA_MEDIO_PAGO) AS id_medio_pago
-FROM gd_esquema.Maestra m
-WHERE m.PAGO_VENTA_IMPORTE IS NOT NULL
+
 
 
 -- MANGO_DB.inmueble
@@ -477,25 +471,27 @@ WHERE m.ALQUILER_CODIGO IS NOT NULL
 
 -- MANGO_DB.venta
 -- FALTA id_anuncio, id_comprador, id_pago_venta
-INSERT INTO MANGO_DB.venta (codigo, fecha, precio_venta, moneda, comision, id_anuncio, id_comprador,
-							id_pago_venta)
-SELECT m.VENTA_CODIGO, m.VENTA_FECHA, m.VENTA_PRECIO_VENTA, m.VENTA_MONEDA, m.VENTA_COMISION,
+INSERT INTO MANGO_DB.venta (codigo, fecha, precio_venta, moneda, comision, id_anuncio, id_comprador)
+SELECT DISTINCT m.VENTA_CODIGO, m.VENTA_FECHA, m.VENTA_PRECIO_VENTA, m.VENTA_MONEDA, m.VENTA_COMISION,
 	   (SELECT codigo FROM MANGO_DB.anuncio WHERE m.ANUNCIO_CODIGO = codigo)
 	   ,(SELECT id FROM MANGO_DB.comprador WHERE m.COMPRADOR_DNI = dni AND m.COMPRADOR_TELEFONO = telefono)
 	   -- ,(SELECT pv.id FROM MANGO_DB.pago_venta pv WHERE m.PAGO_VENTA_MEDIO_PAGO = pv.) -- Para mi la venta no debería tener pago_venta, debería ser al revés (capaz me equivoco)
 FROM gd_esquema.Maestra m
 WHERE m.VENTA_CODIGO IS NOT NULL
 
--- testing
 
-SELECT * FROM gd_esquema.Maestra WHERE VENTA_CODIGO IS NOT NULL
-
-SELECT * FROM MANGO_DB.pago_venta
-
-
+-- MANGO_DB.pago_venta 
+INSERT INTO MANGO_DB.pago_venta (importe, moneda, cotizacion, id_medio_pago, cod_venta)
+SELECT DISTINCT m.PAGO_VENTA_IMPORTE, (SELECT DISTINCT mo.id FROM MANGO_DB.moneda mo WHERE mo.descripcion = m.PAGO_VENTA_MONEDA) as id_moneda, m.PAGO_VENTA_COTIZACION, 
+	(SELECT DISTINCT mp.id 
+	FROM MANGO_DB.medio_pago mp 
+	WHERE mp.descripcion = m.PAGO_VENTA_MEDIO_PAGO) AS id_medio_pago
+	, m.VENTA_CODIGO
+FROM gd_esquema.Maestra m
+WHERE m.PAGO_VENTA_IMPORTE IS NOT NULL
 
 -- MANGO_DB.pago_alquiler
-INSERT INTO MANGO_DB.pago_alquiler (codigo, id_alquiler, fecha_pago, fecha_vencimiento, nro_periodo, desc_periodo,
+INSERT INTO MANGO_DB.pago_alquiler (codigo, id_alquiler, fecha_pago, fecha_vencimiento, nro_periodo,
 									fec_ini, fec_fin, importe, id_medio_pago)
 SELECT m.PAGO_ALQUILER_CODIGO,
 	   (SELECT codigo FROM MANGO_DB.alquiler WHERE codigo = ALQUILER_CODIGO),
@@ -506,3 +502,7 @@ SELECT m.PAGO_ALQUILER_CODIGO,
 FROM gd_esquema.Maestra m
 WHERE m.PAGO_ALQUILER_CODIGO IS NOT NULL
 /* ------- FIN MIGRACION DE DATOS ------- */
+
+-- SELECT * FROM gd_esquema.Maestra m WHERE m.PAGO_ALQUILER_CODIGO IS NOT NULL
+
+-- Tener desc_periodo en pago_alquiler es al cuete, no lo pide la consigna. Esta información estaría en el anuncio, no se si hace falta desnormalizar...
