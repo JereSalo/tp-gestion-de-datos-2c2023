@@ -4,7 +4,6 @@ USE GD2C2023
 IF NOT EXISTS (SELECT schema_id FROM sys.schemas WHERE name = 'MANGO_DB')
 BEGIN
     -- Crea el schema
-	--DROP SCHEMA MANGO_DB
     EXEC('CREATE SCHEMA MANGO_DB;'); 
     PRINT 'Esquema "MANGO_DB" creado con ï¿½xito.';
 END
@@ -12,7 +11,7 @@ ELSE
 BEGIN
     PRINT 'El esquema "MANGO_DB" ya existe en la base de datos.';
 END
---DROP PROCEDURE MANGO_DB.BorrarTablas
+
 --EXEC MANGO_DB.BorrarTablas;
 
 /* ------- INICIO DE CREACION DE TABLAS ------- */
@@ -293,7 +292,7 @@ FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_ESTADO IS NOT NULL
 
 -- MANGO_DB.ambientes
-INSERT INTO MANGO_DB.ambientes ()
+INSERT INTO MANGO_DB.ambientes (detalle)
 SELECT DISTINCT m.INMUEBLE_CANT_AMBIENTES
 FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_CANT_AMBIENTES IS NOT NULL
@@ -452,10 +451,6 @@ SELECT DISTINCT m.ANUNCIO_CODIGO,
 FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_CODIGO is not null
 
--- No se si tengo mal cargados los datos pero esta query me da 0, o sea ese anuncio tiene como tipo_periodo un 0 cuando en realidad debería decir Periodo Mes o algo así...
--- SELECT ANUNCIO_TIPO_PERIODO FROM gd_esquema.Maestra WHERE ANUNCIO_CODIGO = 1304
-
-
 -- MANGO_DB.alquiler
 INSERT INTO MANGO_DB.alquiler (codigo, fecha_inicio, fecha_fin, cant_periodos, deposito, comision, gastos_averigua,
 							   estado, id_anuncio, id_inquilino)
@@ -466,16 +461,12 @@ SELECT DISTINCT m.ALQUILER_CODIGO, m.ALQUILER_FECHA_INICIO, m.ALQUILER_FECHA_FIN
 FROM gd_esquema.Maestra m
 WHERE m.ALQUILER_CODIGO IS NOT NULL
 
--- Hay un único caso de DNI repetido en el sistema, por eso el DNI no podría ser una PK, voy a comparar también con el teléfono
--- SELECT * FROM MANGO_DB.inquilino WHERE dni = 81797777
-
 -- MANGO_DB.venta
--- FALTA id_pago_venta
 INSERT INTO MANGO_DB.venta (codigo, fecha, precio_venta, moneda, comision, id_anuncio, id_comprador)
 SELECT DISTINCT m.VENTA_CODIGO, m.VENTA_FECHA, m.VENTA_PRECIO_VENTA, m.VENTA_MONEDA, m.VENTA_COMISION,
 	   (SELECT codigo FROM MANGO_DB.anuncio WHERE m.ANUNCIO_CODIGO = codigo)
 	   ,(SELECT id FROM MANGO_DB.comprador WHERE m.COMPRADOR_DNI = dni AND m.COMPRADOR_TELEFONO = telefono)
-	   -- ,(SELECT pv.id FROM MANGO_DB.pago_venta pv WHERE m.PAGO_VENTA_MEDIO_PAGO = pv.) -- Para mi la venta no debería tener pago_venta, debería ser al revés (capaz me equivoco)
+	   -- ,(SELECT pv.id FROM MANGO_DB.pago_venta pv WHERE m.PAGO_VENTA_MEDIO_PAGO = pv.) -- Para mi la venta no deberï¿½a tener pago_venta, deberï¿½a ser al revï¿½s (capaz me equivoco)
 FROM gd_esquema.Maestra m
 WHERE m.VENTA_CODIGO IS NOT NULL
 
@@ -501,7 +492,3 @@ SELECT m.PAGO_ALQUILER_CODIGO,
 FROM gd_esquema.Maestra m
 WHERE m.PAGO_ALQUILER_CODIGO IS NOT NULL
 /* ------- FIN MIGRACION DE DATOS ------- */
-
--- SELECT * FROM gd_esquema.Maestra m WHERE m.PAGO_ALQUILER_CODIGO IS NOT NULL
-
--- Tener desc_periodo en pago_alquiler es al cuete, no lo pide la consigna. Esta información estaría en el anuncio, no se si hace falta desnormalizar...
