@@ -41,13 +41,13 @@ CREATE TABLE MANGO_DB.orientacion (
 	orientacion NVARCHAR(100)
 );
 
-CREATE TABLE MANGO_DB.caracteristicas_inmueble (
+
+
+CREATE TABLE MANGO_DB.caracteristica (
 	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
-	wifi NUMERIC(18,0),
-	cable NUMERIC(18,0),
-	calefaccion NUMERIC(18,0),
-	gas NUMERIC(18,0)
+	detalle NVARCHAR(100)
 );
+
 
 CREATE TABLE MANGO_DB.barrio (
 	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
@@ -158,6 +158,7 @@ CREATE TABLE MANGO_DB.comprador (
 
 CREATE INDEX ix1_comprador ON MANGO_DB.comprador (fecha_registro);
 
+
 CREATE TABLE MANGO_DB.inmueble (
     codigo NUMERIC(18,0) PRIMARY KEY,
     nombre NVARCHAR(100),
@@ -168,7 +169,7 @@ CREATE TABLE MANGO_DB.inmueble (
     expensas NUMERIC(18,2),
 	id_localidad NUMERIC(18,0) NOT NULL,
     id_barrio NUMERIC(18,0) NOT NULL,
-    id_caracteristicas NUMERIC(18,0) NOT NULL,
+    id_caracteristicas NUMERIC(18,0) NOT NULL,		-- VER COMO SE SOLUCIONA, SI HAY UNA FK
     id_tipo_inmueble NUMERIC(18,0) NOT NULL,
     id_cantidad_ambientes NUMERIC(18,0) NOT NULL,
     id_orientacion NUMERIC(18,0) NOT NULL,
@@ -178,13 +179,28 @@ CREATE TABLE MANGO_DB.inmueble (
 
     FOREIGN KEY (id_localidad) REFERENCES MANGO_DB.localidad(id),
     FOREIGN KEY (id_barrio) REFERENCES MANGO_DB.barrio(id),
-    FOREIGN KEY (id_caracteristicas) REFERENCES MANGO_DB.caracteristicas_inmueble(id),
     FOREIGN KEY (id_tipo_inmueble) REFERENCES MANGO_DB.tipo_inmueble(id),
     FOREIGN KEY (id_cantidad_ambientes) REFERENCES MANGO_DB.ambientes(id),
     FOREIGN KEY (id_orientacion) REFERENCES MANGO_DB.orientacion(id),
     FOREIGN KEY (id_disposicion) REFERENCES MANGO_DB.disposicion(id),
     FOREIGN KEY (id_estado) REFERENCES MANGO_DB.estado(id),
     FOREIGN KEY (id_propietario) REFERENCES MANGO_DB.propietario(id)
+);
+
+-- DROP SCHEMA MANGO_DB
+-- DROP PROCEDURE MANGO_DB.BorrarTablas
+-- EXEC MANGO_DB.BorrarTablas;
+
+CREATE TABLE MANGO_DB.caracteristicas_x_inmueble (
+	id_inmueble NUMERIC(18,0),
+	id_caracteristica NUMERIC(18, 0),
+	cantidad NUMERIC(18, 0)
+
+	CONSTRAINT pk_id_inmueble PRIMARY KEY (id_inmueble),
+	CONSTRAINT pk_id_caracteristica UNIQUE (id_caracteristica),
+
+	FOREIGN KEY (id_inmueble) REFERENCES MANGO_DB.inmueble(codigo),
+	FOREIGN KEY (id_caracteristica) REFERENCES MANGO_DB.caracteristica(id)
 );
 
 CREATE INDEX ix1_inmueble ON MANGO_DB.inmueble (direccion, id_barrio, id_propietario, id_cantidad_ambientes);
@@ -310,10 +326,22 @@ FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_ORIENTACION IS NOT NULL
 
 -- MANGO_DB.caracteristicas_inmueble
-INSERT INTO MANGO_DB.caracteristicas_inmueble (wifi, cable, calefaccion, gas)
+
+
+/*
+TODO, VER COMO SOLUCIONAR LOS INSERTS A CARACTERISTICA Y CARACTERISTICAS_X_INMUEBLE YA QUE LA QUERY ES MÁS COMPLEJA
+QUE LA QUE ESTÁ HECHA EN CARACTERISTICA DADO QUE DETALLE ES UN NVARCHAR Y NO UN NUMERIC
+*/
+
+
+
+
+/*
+INSERT INTO MANGO_DB.caracteristica (detalle)
 SELECT DISTINCT m.INMUEBLE_CARACTERISTICA_WIFI, m.INMUEBLE_CARACTERISTICA_CABLE, m.INMUEBLE_CARACTERISTICA_CALEFACCION, m.INMUEBLE_CARACTERISTICA_GAS
 FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_CODIGO IS NOT NULL
+*/
 
 -- MANGO_DB.barrio
 INSERT INTO MANGO_DB.barrio (nombre)
@@ -398,6 +426,15 @@ FROM gd_esquema.Maestra m
 WHERE m.COMPRADOR_DNI IS NOT NULL
 
 -- MANGO_DB.inmueble
+/*
+
+
+
+TODO ARREGLAR EL INSERT DE ID_CARACTERISTICAS PORQUE ROMPE TODAS LAS TABLAS SIGUIENTES SINO
+
+
+
+*/
 INSERT INTO MANGO_DB.inmueble (codigo, nombre, descripcion, direccion, superficie_total, antiguedad, expensas, 
 							   id_localidad, id_barrio, id_caracteristicas, id_tipo_inmueble, id_cantidad_ambientes,
 							   id_orientacion, id_disposicion, id_estado, id_propietario)
@@ -409,11 +446,11 @@ SELECT DISTINCT m.INMUEBLE_CODIGO, m.INMUEBLE_NOMBRE, m.INMUEBLE_DESCRIPCION, m.
 	   ,(SELECT b.id
 		FROM MANGO_DB.barrio b
 		WHERE m.INMUEBLE_BARRIO = nombre)
-	   ,(SELECT c.id
+	   ,/*(SELECT c.id
 	   FROM MANGO_DB.caracteristicas_inmueble c
 	   WHERE m.INMUEBLE_CARACTERISTICA_WIFI = c.wifi AND m.INMUEBLE_CARACTERISTICA_CABLE = c.cable AND
 	   m.INMUEBLE_CARACTERISTICA_CALEFACCION = c.calefaccion AND m.INMUEBLE_CARACTERISTICA_GAS = c.gas)
-	   ,(SELECT id 
+	   ,*/(SELECT id 
 	   FROM MANGO_DB.tipo_inmueble
 	   WHERE m.INMUEBLE_TIPO_INMUEBLE = tipo)
 	   ,(SELECT id FROM MANGO_DB.ambientes
@@ -466,7 +503,6 @@ INSERT INTO MANGO_DB.venta (codigo, fecha, precio_venta, moneda, comision, id_an
 SELECT DISTINCT m.VENTA_CODIGO, m.VENTA_FECHA, m.VENTA_PRECIO_VENTA, m.VENTA_MONEDA, m.VENTA_COMISION,
 	   (SELECT codigo FROM MANGO_DB.anuncio WHERE m.ANUNCIO_CODIGO = codigo)
 	   ,(SELECT id FROM MANGO_DB.comprador WHERE m.COMPRADOR_DNI = dni AND m.COMPRADOR_TELEFONO = telefono)
-	   -- ,(SELECT pv.id FROM MANGO_DB.pago_venta pv WHERE m.PAGO_VENTA_MEDIO_PAGO = pv.) -- Para mi la venta no deber�a tener pago_venta, deber�a ser al rev�s (capaz me equivoco)
 FROM gd_esquema.Maestra m
 WHERE m.VENTA_CODIGO IS NOT NULL
 
