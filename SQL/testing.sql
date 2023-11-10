@@ -6,7 +6,8 @@ SELECT * FROM MANGO_DB.alquiler
 SELECT * FROM MANGO_DB.ambientes
 SELECT * FROM MANGO_DB.anuncio
 SELECT * FROM MANGO_DB.barrio
-SELECT * FROM MANGO_DB.caracteristicas_inmueble
+SELECT * FROM MANGO_DB.caracteristicas_x_inmueble
+SELECT * FROM MANGO_DB.caracteristica
 SELECT * FROM MANGO_DB.comprador
 SELECT * FROM MANGO_DB.detalle_alq
 SELECT * FROM MANGO_DB.disposicion

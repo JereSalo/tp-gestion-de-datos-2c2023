@@ -5,14 +5,16 @@ IF NOT EXISTS (SELECT schema_id FROM sys.schemas WHERE name = 'MANGO_DB')
 BEGIN
     -- Crea el schema
     EXEC('CREATE SCHEMA MANGO_DB;'); 
-    PRINT 'Esquema "MANGO_DB" creado con �xito.';
+    PRINT 'Esquema "MANGO_DB" creado con exito.';
 END
 ELSE
 BEGIN
     PRINT 'El esquema "MANGO_DB" ya existe en la base de datos.';
 END
 
---EXEC MANGO_DB.BorrarTablas;
+-- DROP SCHEMA MANGO_DB
+-- DROP PROCEDURE MANGO_DB.BorrarTablas
+-- EXEC MANGO_DB.BorrarTablas;
 
 /* ------- INICIO DE CREACION DE TABLAS ------- */
 
@@ -40,14 +42,6 @@ CREATE TABLE MANGO_DB.orientacion (
 	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
 	orientacion NVARCHAR(100)
 );
-
-
-
-CREATE TABLE MANGO_DB.caracteristica (
-	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
-	detalle NVARCHAR(100)
-);
-
 
 CREATE TABLE MANGO_DB.barrio (
 	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
@@ -108,7 +102,7 @@ CREATE TABLE MANGO_DB.inquilino (
 CREATE INDEX ix1_inquilino ON MANGO_DB.inquilino (apellido, dni);
 
 CREATE TABLE MANGO_DB.provincia (
-	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY, --Con el identiti hago que sea autoincremental, empieza en 1 y suma de a 1
+	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY, --Con el identity hago que sea autoincremental, empieza en 1 y suma de a 1
 	nombre NVARCHAR(100)
 );
 
@@ -158,6 +152,10 @@ CREATE TABLE MANGO_DB.comprador (
 
 CREATE INDEX ix1_comprador ON MANGO_DB.comprador (fecha_registro);
 
+CREATE TABLE MANGO_DB.caracteristica (
+	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
+	detalle NVARCHAR(100)
+);
 
 CREATE TABLE MANGO_DB.inmueble (
     codigo NUMERIC(18,0) PRIMARY KEY,
@@ -169,7 +167,7 @@ CREATE TABLE MANGO_DB.inmueble (
     expensas NUMERIC(18,2),
 	id_localidad NUMERIC(18,0) NOT NULL,
     id_barrio NUMERIC(18,0) NOT NULL,
-    id_caracteristicas NUMERIC(18,0) NOT NULL,		-- VER COMO SE SOLUCIONA, SI HAY UNA FK
+   /* id_caracteristica NUMERIC(18,0) NOT NULL,		-- YA NO ES NECESARIA LA FK YA QUE SE COMUNICA POR ID DEL INMUEBLE CON CARACTERISTICAS_X_INMUEBLE*/
     id_tipo_inmueble NUMERIC(18,0) NOT NULL,
     id_cantidad_ambientes NUMERIC(18,0) NOT NULL,
     id_orientacion NUMERIC(18,0) NOT NULL,
@@ -184,26 +182,21 @@ CREATE TABLE MANGO_DB.inmueble (
     FOREIGN KEY (id_orientacion) REFERENCES MANGO_DB.orientacion(id),
     FOREIGN KEY (id_disposicion) REFERENCES MANGO_DB.disposicion(id),
     FOREIGN KEY (id_estado) REFERENCES MANGO_DB.estado(id),
-    FOREIGN KEY (id_propietario) REFERENCES MANGO_DB.propietario(id)
+    FOREIGN KEY (id_propietario) REFERENCES MANGO_DB.propietario(id),
 );
 
--- DROP SCHEMA MANGO_DB
--- DROP PROCEDURE MANGO_DB.BorrarTablas
--- EXEC MANGO_DB.BorrarTablas;
+CREATE INDEX ix1_inmueble ON MANGO_DB.inmueble (direccion, id_barrio, id_propietario, id_cantidad_ambientes);
 
 CREATE TABLE MANGO_DB.caracteristicas_x_inmueble (
 	id_inmueble NUMERIC(18,0),
 	id_caracteristica NUMERIC(18, 0),
 	cantidad NUMERIC(18, 0)
 
-	CONSTRAINT pk_id_inmueble PRIMARY KEY (id_inmueble),
-	CONSTRAINT pk_id_caracteristica UNIQUE (id_caracteristica),
+	CONSTRAINT pk_id_inmueble PRIMARY KEY (id_inmueble, id_caracteristica),
 
 	FOREIGN KEY (id_inmueble) REFERENCES MANGO_DB.inmueble(codigo),
 	FOREIGN KEY (id_caracteristica) REFERENCES MANGO_DB.caracteristica(id)
 );
-
-CREATE INDEX ix1_inmueble ON MANGO_DB.inmueble (direccion, id_barrio, id_propietario, id_cantidad_ambientes);
 
 CREATE TABLE MANGO_DB.anuncio (
     codigo NUMERIC(18,0) PRIMARY KEY,
@@ -325,16 +318,12 @@ SELECT DISTINCT m.INMUEBLE_ORIENTACION
 FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_ORIENTACION IS NOT NULL
 
--- MANGO_DB.caracteristicas_inmueble
-
+-- MANGO_DB.caracteristicas_x_inmueble
 
 /*
 TODO, VER COMO SOLUCIONAR LOS INSERTS A CARACTERISTICA Y CARACTERISTICAS_X_INMUEBLE YA QUE LA QUERY ES MÁS COMPLEJA
 QUE LA QUE ESTÁ HECHA EN CARACTERISTICA DADO QUE DETALLE ES UN NVARCHAR Y NO UN NUMERIC
 */
-
-
-
 
 /*
 INSERT INTO MANGO_DB.caracteristica (detalle)
@@ -436,7 +425,7 @@ TODO ARREGLAR EL INSERT DE ID_CARACTERISTICAS PORQUE ROMPE TODAS LAS TABLAS SIGU
 
 */
 INSERT INTO MANGO_DB.inmueble (codigo, nombre, descripcion, direccion, superficie_total, antiguedad, expensas, 
-							   id_localidad, id_barrio, id_caracteristicas, id_tipo_inmueble, id_cantidad_ambientes,
+							   id_localidad, id_barrio, id_tipo_inmueble, id_cantidad_ambientes,
 							   id_orientacion, id_disposicion, id_estado, id_propietario)
 SELECT DISTINCT m.INMUEBLE_CODIGO, m.INMUEBLE_NOMBRE, m.INMUEBLE_DESCRIPCION, m.INMUEBLE_DIRECCION, m.INMUEBLE_SUPERFICIETOTAL,
 	   m.INMUEBLE_ANTIGUEDAD, INMUEBLE_EXPESAS
@@ -446,11 +435,7 @@ SELECT DISTINCT m.INMUEBLE_CODIGO, m.INMUEBLE_NOMBRE, m.INMUEBLE_DESCRIPCION, m.
 	   ,(SELECT b.id
 		FROM MANGO_DB.barrio b
 		WHERE m.INMUEBLE_BARRIO = nombre)
-	   ,/*(SELECT c.id
-	   FROM MANGO_DB.caracteristicas_inmueble c
-	   WHERE m.INMUEBLE_CARACTERISTICA_WIFI = c.wifi AND m.INMUEBLE_CARACTERISTICA_CABLE = c.cable AND
-	   m.INMUEBLE_CARACTERISTICA_CALEFACCION = c.calefaccion AND m.INMUEBLE_CARACTERISTICA_GAS = c.gas)
-	   ,*/(SELECT id 
+	   ,(SELECT id 
 	   FROM MANGO_DB.tipo_inmueble
 	   WHERE m.INMUEBLE_TIPO_INMUEBLE = tipo)
 	   ,(SELECT id FROM MANGO_DB.ambientes
@@ -473,8 +458,8 @@ INSERT INTO MANGO_DB.anuncio (codigo, id_inmueble, id_agente, fecha_publicacion,
 							  tipo_periodo)
 SELECT DISTINCT m.ANUNCIO_CODIGO, 
 	   (SELECT DISTINCT codigo FROM MANGO_DB.inmueble
-	   WHERE m.INMUEBLE_CODIGO = codigo) as cod_inmueble
-	   ,(SELECT id FROM MANGO_DB.agente 
+	   WHERE m.INMUEBLE_CODIGO = codigo) as cod_inmueble,
+	   (SELECT id FROM MANGO_DB.agente 
 	   WHERE m.AGENTE_DNI = dni) as agente_dni,
 	   m.ANUNCIO_FECHA_PUBLICACION, m.ANUNCIO_PRECIO_PUBLICADO, m.ANUNCIO_COSTO_ANUNCIO,
 	   m.ANUNCIO_FECHA_FINALIZACION, 
