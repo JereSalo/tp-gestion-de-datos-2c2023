@@ -15,6 +15,7 @@ END
 -- DROP SCHEMA MANGO_DB
 -- DROP PROCEDURE MANGO_DB.BorrarTablas
 -- EXEC MANGO_DB.BorrarTablas;
+-- DROP FUNCTION CARACTERISTICAS;
 
 /* ------- INICIO DE CREACION DE TABLAS ------- */
 
@@ -189,8 +190,7 @@ CREATE INDEX ix1_inmueble ON MANGO_DB.inmueble (direccion, id_barrio, id_propiet
 
 CREATE TABLE MANGO_DB.caracteristicas_x_inmueble (
 	id_inmueble NUMERIC(18,0),
-	id_caracteristica NUMERIC(18, 0),
-	cantidad NUMERIC(18, 0)
+	id_caracteristica NUMERIC(18, 0)
 
 	CONSTRAINT pk_id_inmueble PRIMARY KEY (id_inmueble, id_caracteristica),
 
@@ -318,19 +318,37 @@ SELECT DISTINCT m.INMUEBLE_ORIENTACION
 FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_ORIENTACION IS NOT NULL
 
--- MANGO_DB.caracteristicas_x_inmueble
+/*----- INICIO CREACION FUNCION PARA TOMAR LAS CARACTERISTICAS -----*/
+CREATE FUNCTION CARACTERISTICAS(@NOMBRE_COLUMNA VARCHAR(50))
+RETURNS VARCHAR(20)
+AS BEGIN
+DECLARE @RETORNO VARCHAR(20)
 
-/*
-TODO, VER COMO SOLUCIONAR LOS INSERTS A CARACTERISTICA Y CARACTERISTICAS_X_INMUEBLE YA QUE LA QUERY ES MÁS COMPLEJA
-QUE LA QUE ESTÁ HECHA EN CARACTERISTICA DADO QUE DETALLE ES UN NVARCHAR Y NO UN NUMERIC
-*/
+DECLARE @posicionGuionBajo INT = LEN(@NOMBRE_COLUMNA) - CHARINDEX('_', REVERSE(@NOMBRE_COLUMNA)) + 1
 
-/*
+SET @RETORNO = SUBSTRING(@NOMBRE_COLUMNA, @posicionGuionBajo + 1, LEN(@NOMBRE_COLUMNA) - @posicionGuionBajo)
+
+RETURN @RETORNO
+END
+/*----- FIN CREACION FUNCION PARA TOMAR LAS CARACTERISTICAS -----*/
+
+-- MANGO_DB.caracteristica
 INSERT INTO MANGO_DB.caracteristica (detalle)
-SELECT DISTINCT m.INMUEBLE_CARACTERISTICA_WIFI, m.INMUEBLE_CARACTERISTICA_CABLE, m.INMUEBLE_CARACTERISTICA_CALEFACCION, m.INMUEBLE_CARACTERISTICA_GAS
+SELECT DISTINCT dbo.CARACTERISTICAS('INMUEBLE_CARACTERISTICA_WIFI')
 FROM gd_esquema.Maestra m
-WHERE m.INMUEBLE_CODIGO IS NOT NULL
-*/
+WHERE m.INMUEBLE_CODIGO IS NOT NULL AND m.INMUEBLE_CARACTERISTICA_WIFI = 1
+UNION
+SELECT DISTINCT dbo.CARACTERISTICAS('INMUEBLE_CARACTERISTICA_CABLE')
+FROM gd_esquema.Maestra m
+WHERE m.INMUEBLE_CODIGO IS NOT NULL AND m.INMUEBLE_CARACTERISTICA_CABLE = 1
+UNION
+SELECT DISTINCT dbo.CARACTERISTICAS('INMUEBLE_CARACTERISTICA_CALEFACCION')
+FROM gd_esquema.Maestra m
+WHERE m.INMUEBLE_CODIGO IS NOT NULL AND m.INMUEBLE_CARACTERISTICA_CALEFACCION = 1
+UNION
+SELECT DISTINCT dbo.CARACTERISTICAS('INMUEBLE_CARACTERISTICA_GAS')
+FROM gd_esquema.Maestra m
+WHERE m.INMUEBLE_CODIGO IS NOT NULL AND m.INMUEBLE_CARACTERISTICA_GAS = 1
 
 -- MANGO_DB.barrio
 INSERT INTO MANGO_DB.barrio (nombre)
@@ -415,15 +433,6 @@ FROM gd_esquema.Maestra m
 WHERE m.COMPRADOR_DNI IS NOT NULL
 
 -- MANGO_DB.inmueble
-/*
-
-
-
-TODO ARREGLAR EL INSERT DE ID_CARACTERISTICAS PORQUE ROMPE TODAS LAS TABLAS SIGUIENTES SINO
-
-
-
-*/
 INSERT INTO MANGO_DB.inmueble (codigo, nombre, descripcion, direccion, superficie_total, antiguedad, expensas, 
 							   id_localidad, id_barrio, id_tipo_inmueble, id_cantidad_ambientes,
 							   id_orientacion, id_disposicion, id_estado, id_propietario)
@@ -451,7 +460,6 @@ SELECT DISTINCT m.INMUEBLE_CODIGO, m.INMUEBLE_NOMBRE, m.INMUEBLE_DESCRIPCION, m.
 FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_CODIGO IS NOT NULL
 
-
 -- MANGO_DB.anuncio
 INSERT INTO MANGO_DB.anuncio (codigo, id_inmueble, id_agente, fecha_publicacion, precio_publicado,
 							  costo_anuncio, fecha_finalizacion, id_tipo_operacion, id_moneda, id_estado, 
@@ -472,6 +480,32 @@ SELECT DISTINCT m.ANUNCIO_CODIGO,
 	   m.ANUNCIO_TIPO_PERIODO
 FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_CODIGO is not null
+
+-- MANGO_DB.caracteristicas_x_inmueble
+INSERT INTO MANGO_DB.caracteristicas_x_inmueble(id_inmueble, id_caracteristica)
+SELECT i.codigo, c.id
+FROM gd_esquema.Maestra m JOIN MANGO_DB.caracteristica c ON c.detalle = 'WIFI'
+						  JOIN MANGO_DB.inmueble i ON i.codigo = m.INMUEBLE_CODIGO
+WHERE m.INMUEBLE_CARACTERISTICA_WIFI = 1 AND m.INMUEBLE_CODIGO is not null
+GROUP BY c.id, i.codigo
+UNION
+SELECT i.codigo, c.id
+FROM gd_esquema.Maestra m JOIN MANGO_DB.caracteristica c ON c.detalle = 'CABLE'
+						  JOIN MANGO_DB.inmueble i ON i.codigo = m.INMUEBLE_CODIGO
+WHERE m.INMUEBLE_CARACTERISTICA_CABLE = 1 AND m.INMUEBLE_CODIGO is not null
+GROUP BY c.id, i.codigo
+UNION
+SELECT i.codigo, c.id
+FROM gd_esquema.Maestra m JOIN MANGO_DB.caracteristica c ON c.detalle = 'CALEFACCION'
+						  JOIN MANGO_DB.inmueble i ON i.codigo = m.INMUEBLE_CODIGO
+WHERE m.INMUEBLE_CARACTERISTICA_CALEFACCION = 1 AND m.INMUEBLE_CODIGO is not null
+GROUP BY c.id, i.codigo
+UNION
+SELECT i.codigo, c.id
+FROM gd_esquema.Maestra m JOIN MANGO_DB.caracteristica c ON c.detalle = 'GAS'
+						  JOIN MANGO_DB.inmueble i ON i.codigo = m.INMUEBLE_CODIGO
+WHERE m.INMUEBLE_CARACTERISTICA_GAS = 1 AND m.INMUEBLE_CODIGO is not null
+GROUP BY c.id, i.codigo
 
 -- MANGO_DB.alquiler
 INSERT INTO MANGO_DB.alquiler (codigo, fecha_inicio, fecha_fin, cant_periodos, deposito, comision, gastos_averigua,
