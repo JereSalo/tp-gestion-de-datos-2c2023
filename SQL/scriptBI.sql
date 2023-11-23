@@ -51,6 +51,13 @@ CREATE TABLE BI_Tipo_Moneda (
 	tipo NVARCHAR(100)
 );
 
+/* ------- CREACION DEL HECHO ------- */
+
+CREATE TABLE BI_Hecho (
+	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
+	tipo NVARCHAR(100)
+);
+
 
 /* ------- CREACION DE LAS VISTAS DE LAS DIMENSIONES ------- */
 
@@ -99,9 +106,7 @@ AS
 SELECT * FROM gd_esquema.Maestra
 --WITH CHECK OPTION
 
-
-/* ------- CARGA DE LAS VISTAS DE LAS DIMENSIONES ------- */
-
-
-
 /* ------- CARGA DE LAS DIMENSIONES ------- */
+
+
+/* ------- CARGA DEL HECHO ------- */
