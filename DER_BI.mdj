@@ -245,7 +245,7 @@
 									"font": "Arial;13;1",
 									"left": 288,
 									"top": 373,
-									"width": 198.29541015625,
+									"width": 220.7216796875,
 									"height": 13,
 									"text": "BI_Tiempo"
 								},
@@ -271,7 +271,7 @@
 											"font": "Arial;13;0",
 											"left": 293,
 											"top": 396,
-											"width": 188.29541015625,
+											"width": 210.7216796875,
 											"height": 13
 										},
 										{
@@ -286,22 +286,52 @@
 											"font": "Arial;13;0",
 											"left": 293,
 											"top": 411,
-											"width": 188.29541015625,
+											"width": 210.7216796875,
+											"height": 13
+										},
+										{
+											"_type": "ERDColumnView",
+											"_id": "AAAAAAGL/pst60B+MPA=",
+											"_parent": {
+												"$ref": "AAAAAAGL+d+xs1remWM="
+											},
+											"model": {
+												"$ref": "AAAAAAGL/pst4UB7PKQ="
+											},
+											"font": "Arial;13;0",
+											"left": 293,
+											"top": 426,
+											"width": 210.7216796875,
+											"height": 13
+										},
+										{
+											"_type": "ERDColumnView",
+											"_id": "AAAAAAGL/pt5sECFC9g=",
+											"_parent": {
+												"$ref": "AAAAAAGL+d+xs1remWM="
+											},
+											"model": {
+												"$ref": "AAAAAAGL/pt5qUCC/II="
+											},
+											"font": "Arial;13;0",
+											"left": 293,
+											"top": 441,
+											"width": 210.7216796875,
 											"height": 13
 										}
 									],
 									"font": "Arial;13;0",
 									"left": 288,
 									"top": 391,
-									"width": 198.29541015625,
-									"height": 38
+									"width": 220.7216796875,
+									"height": 68
 								}
 							],
 							"font": "Arial;13;0",
 							"left": 288,
 							"top": 368,
-							"width": 198.29541015625,
-							"height": 72,
+							"width": 220.7216796875,
+							"height": 91,
 							"nameLabel": {
 								"$ref": "AAAAAAGL+d+xs1rdcHM="
 							},
@@ -991,7 +1021,7 @@
 									},
 									"visible": false,
 									"font": "Arial;13;0",
-									"left": 570,
+									"left": 582,
 									"top": 376,
 									"height": 13,
 									"alpha": 1.5707963267948966,
@@ -1008,7 +1038,7 @@
 										"$ref": "AAAAAAGL+eZWPVxkeEU="
 									},
 									"font": "Arial;13;0",
-									"left": 510,
+									"left": 533,
 									"top": 376,
 									"height": 13,
 									"alpha": 0.5235987755982988,
@@ -1043,7 +1073,7 @@
 								"$ref": "AAAAAAGL+d+xs1rc4KQ="
 							},
 							"lineStyle": 2,
-							"points": "485:397;656:397",
+							"points": "508:397;656:397",
 							"nameLabel": {
 								"$ref": "AAAAAAGL+eZWPVxlZJw="
 							},
@@ -1893,9 +1923,29 @@
 							"_parent": {
 								"$ref": "AAAAAAGL+d+xs1raAc4="
 							},
-							"name": "tiempo",
-							"type": "NVARCHAR",
-							"length": "100"
+							"name": "anio",
+							"type": "NUMERIC",
+							"length": "18,0"
+						},
+						{
+							"_type": "ERDColumn",
+							"_id": "AAAAAAGL/pst4UB7PKQ=",
+							"_parent": {
+								"$ref": "AAAAAAGL+d+xs1raAc4="
+							},
+							"name": "cuatrimestre",
+							"type": "SMALLINT",
+							"length": 0
+						},
+						{
+							"_type": "ERDColumn",
+							"_id": "AAAAAAGL/pt5qUCC/II=",
+							"_parent": {
+								"$ref": "AAAAAAGL+d+xs1raAc4="
+							},
+							"name": "mes",
+							"type": "NUMERIC",
+							"length": "18,0"
 						}
 					]
 				},

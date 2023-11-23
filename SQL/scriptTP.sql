@@ -414,7 +414,6 @@ FROM gd_esquema.Maestra m
 SET IDENTITY_INSERT MANGO_DB.sucursal OFF;
 
 -- MANGO_DB.detalle_alq
--- Chequear CAMPOS NULL, QUE HACEMOS??? PUSE EL WHERE PARA ANULAR ESO, CHEQUEAR ENUNCIADO
 INSERT INTO MANGO_DB.detalle_alq (cod_alquiler, nro_periodo_fin, precio, nro_periodo_in)
 SELECT DISTINCT m.ALQUILER_CODIGO, m.DETALLE_ALQ_NRO_PERIODO_FIN, m.DETALLE_ALQ_PRECIO, m.DETALLE_ALQ_NRO_PERIODO_INI
 FROM gd_esquema.Maestra m
