@@ -125,7 +125,9 @@ CREATE TABLE MANGO_DB.BI_Hecho (
 
 -- Ubicacion (VER estrategia)
 
-
+-- SELECT * FROM MANGO_DB.pago_venta
+-- SELECT * FROM MANGO_DB.pago_alquiler
+-- SELECT * FROM MANGO_DB.estado_anuncio -- Importa vendido o alquilado
 
 -- Sucursal
 
