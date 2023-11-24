@@ -5,7 +5,7 @@ Script Bussiness Inteligence
 USE GD2C2023
 
 /* ------- CREACION DE LAS FUNCIONES ------- */
-CREATE FUNCTION getCuatrimestre (@fecha DATE)
+CREATE FUNCTION MANGO_DB.getCuatrimestre (@fecha DATE)
 RETURNS SMALLINT
 AS
 BEGIN
@@ -28,8 +28,8 @@ GO
 CREATE TABLE MANGO_DB.BI_Tiempo (
 	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
 	anio NUMERIC(18,0),
-	cuatrimestre SMALLINT CHECK BETWEEN 1 AND 3,
-	mes NUMERIC(18,0) CHECK BETWEEN 1 AND 12
+	cuatrimestre SMALLINT CHECK (cuatrimestre BETWEEN 1 AND 3),
+	mes NUMERIC(18,0) CHECK (mes BETWEEN 1 AND 12)
 );
 
 CREATE TABLE MANGO_DB.BI_Ubicacion(
@@ -90,21 +90,17 @@ CREATE TABLE MANGO_DB.BI_Anuncio (
 
 /* ------- CREACION DEL HECHO ------- */
 
-MANGO_DB.CREATE TABLE BI_Hecho (
-	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
-	id_ubicacion NUMERIC(18,0) NOT NULL,
-	id_tiempo NUMERIC(18,0) NOT NULL,
-	id_sucursal NUMERIC(18,0) NOT NULL,
-	id_rango_etario NUMERIC(18,0) NOT NULL,
-	id_barrio NUMERIC(18,0) NOT NULL,
-	id_tipo_inmueble NUMERIC(18,0) NOT NULL,
-	id_ambientes NUMERIC(18,0) NOT NULL,
-	id_rango_m2 NUMERIC(18,0) NOT NULL,
-	id_tipo_operacion NUMERIC(18,0) NOT NULL,
-	id_tipo_moneda NUMERIC(18,0) NOT NULL
-	id_anuncio NUMERIC(18,0) NOT NULL,
-
-	--tipo NVARCHAR(100)
+CREATE TABLE MANGO_DB.BI_Hecho (
+	id_ubicacion NUMERIC(18,0),
+	id_tiempo NUMERIC(18,0),
+	id_sucursal NUMERIC(18,0),
+	id_rango_etario NUMERIC(18,0),
+	id_tipo_inmueble NUMERIC(18,0),
+	id_ambientes NUMERIC(18,0),
+	id_rango_m2 NUMERIC(18,0),
+	id_tipo_operacion NUMERIC(18,0),
+	id_tipo_moneda NUMERIC(18,0),
+	id_anuncio NUMERIC(18,0)
 
 	FOREIGN KEY (id_ubicacion) REFERENCES MANGO_DB.BI_Ubicacion(id),
     FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id),
@@ -115,32 +111,23 @@ MANGO_DB.CREATE TABLE BI_Hecho (
     FOREIGN KEY (id_rango_m2) REFERENCES MANGO_DB.BI_Rango_m2(id),
     FOREIGN KEY (id_tipo_operacion) REFERENCES MANGO_DB.BI_Tipo_Operacion(id),
     FOREIGN KEY (id_tipo_moneda) REFERENCES MANGO_DB.BI_Tipo_Moneda(id),
-	FOREIGN KEY (id_anuncio) REFERENCES MANGO_DB.BI_Anuncio(id)
+	FOREIGN KEY (id_anuncio) REFERENCES MANGO_DB.BI_Anuncio(id),
+
+	PRIMARY KEY (id_ubicacion, id_tiempo, id_sucursal, id_rango_etario, id_tipo_inmueble, id_ambientes, id_rango_m2, id_tipo_operacion, id_tipo_moneda, id_anuncio)
 );
 
 /* ------- CARGA DE LAS DIMENSIONES ------- */
 
 -- Tenemos que sacar los datos de las tablas del esquema transaccional
 
--- Tiempo
-
-INSERT INTO MANGO_DB.BI_Tiempo (anio, cuatrimestre, mes)
+-- Tiempo (VER estrategia)
 
 
+-- Ubicacion (VER estrategia)
 
--- Esto estaria bueno meterlo adentro de una funcion para que sea mas comodo
-SELECT 
-    YEAR(fecha) AS anio,
-    CASE 
-        WHEN MONTH(fecha) BETWEEN 1 AND 4 THEN 1
-        WHEN MONTH(fecha) BETWEEN 5 AND 9 THEN 2
-        WHEN MONTH(fecha) BETWEEN 10 AND 12 THEN 3
-    END AS cuatrimestre,
-	MONTH(fecha) AS mes
-FROM tu_tabla;
-
--- Ubicacion
-
+-- SELECT * FROM MANGO_DB.pago_venta
+-- SELECT * FROM MANGO_DB.pago_alquiler
+-- SELECT * FROM MANGO_DB.estado_anuncio -- Importa vendido o alquilado
 
 -- Sucursal
 
@@ -184,7 +171,7 @@ FROM MANGO_DB.moneda m
 -- BI_Anuncio
 INSERT INTO MANGO_DB.BI_Anuncio (fecha_publicacion, precio_publicado, 
 								 fecha_finalizacion, tipo_periodo)
-SELECT a.fecha_publicacion, a.fecha_finalizacion, a.tipo_periodo
+SELECT a.fecha_publicacion, a.precio_publicado, a.fecha_finalizacion, a.tipo_periodo
 FROM MANGO_DB.anuncio a
 
 /* ------- CARGA DEL HECHO ------- */
@@ -204,14 +191,14 @@ CREATE VIEW duracion_promedio_anuncios_publicados
 AS 
 SELECT  AVG(DATEDIFF(DAY, BI_anun.fecha_publicacion, BI_anun.fecha_finalizacion)) 'Duracion promedio', 
 		BI_to.tipo 'Tipo operacion', BI_b.nombre 'Barrio', BI_amb.detalle 'Ambientes', 
-		dbo.getCuatrimestre(BI_anun.fecha_publicacion) 'Cuatrimestre', YEAR(BI_anun.fecha_publicacion) 'Anio'
+		MANGO_DB.getCuatrimestre(BI_anun.fecha_publicacion) 'Cuatrimestre', YEAR(BI_anun.fecha_publicacion) 'Anio'
 FROM MANGO_DB.anuncio BI_anun
 		LEFT JOIN MANGO_DB.tipo_operacion BI_to ON BI_to.id = BI_anun.id_tipo_operacion
 		LEFT JOIN MANGO_DB.inmueble BI_inm ON BI_inm.codigo = BI_anun.id_inmueble
 		LEFT JOIN MANGO_DB.barrio BI_b ON BI_b.id = BI_inm.id_barrio
 		LEFT JOIN MANGO_DB.ambientes BI_amb ON BI_amb.id = BI_inm.id_cantidad_ambientes
-GROUP BY BI_to.tipo, BI_b.nombre, BI_amb.detalle, YEAR(BI_anun.fecha_publicacion), dbo.getCuatrimestre(BI_anun.fecha_publicacion)
-ORDER BY YEAR(BI_anun.fecha_publicacion), dbo.getCuatrimestre(BI_anun.fecha_publicacion), BI_to.tipo, BI_b.nombre, BI_amb.detalle
+GROUP BY BI_to.tipo, BI_b.nombre, BI_amb.detalle, YEAR(BI_anun.fecha_publicacion), MANGO_DB.getCuatrimestre(BI_anun.fecha_publicacion)
+ORDER BY YEAR(BI_anun.fecha_publicacion), MANGO_DB.getCuatrimestre(BI_anun.fecha_publicacion), BI_to.tipo, BI_b.nombre, BI_amb.detalle
 
 --WITH CHECK OPTION
 
