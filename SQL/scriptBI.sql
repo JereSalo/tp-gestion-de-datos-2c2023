@@ -85,8 +85,8 @@ CREATE TABLE MANGO_DB.BI_Alquiler (
 -- Y DE ALQUILERES (CON CADA PAGO DE ALQUILER)
 
 CREATE TABLE MANGO_DB.BI_Hecho_anuncio (
-	id_ubicacion NUMERIC(18,0), 	-- Barrio necesario
-	id_tiempo NUMERIC(18,0), 		-- Cuatri y año
+	id_ubicacion NUMERIC(18,0),
+	id_tiempo NUMERIC(18,0),
 	id_sucursal NUMERIC(18,0),
 	id_rango_etario_agente NUMERIC(18,0),
 	id_tipo_inmueble NUMERIC(18,0),
@@ -98,9 +98,6 @@ CREATE TABLE MANGO_DB.BI_Hecho_anuncio (
 	sumatoria_precio NUMERIC(18,2),
 	sumatoria_duracion NUMERIC(18,0),
 	cantidad_anuncios NUMERIC(18,0),
-	--fecha_publicacion DATETIME,
-	--precio_publicado NUMERIC(18,2),
-	--fecha_finalizacion DATETIME,
 
 	FOREIGN KEY (id_ubicacion) REFERENCES MANGO_DB.BI_Ubicacion(id),
     FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id),
@@ -112,7 +109,7 @@ CREATE TABLE MANGO_DB.BI_Hecho_anuncio (
     FOREIGN KEY (id_tipo_operacion) REFERENCES MANGO_DB.BI_Tipo_Operacion(id),
     FOREIGN KEY (id_tipo_moneda) REFERENCES MANGO_DB.BI_Tipo_Moneda(id),
 
-	PRIMARY KEY (id_ubicacion, id_tiempo, id_sucursal, id_rango_etario, id_tipo_inmueble, id_ambientes, id_rango_m2, id_tipo_operacion, id_tipo_moneda)
+	PRIMARY KEY (id_ubicacion, id_tiempo, id_sucursal, id_rango_etario_agente, id_tipo_inmueble, id_ambientes, id_rango_m2, id_tipo_operacion, id_tipo_moneda)
 );
 
 CREATE TABLE MANGO_DB.BI_Hecho_Venta(
