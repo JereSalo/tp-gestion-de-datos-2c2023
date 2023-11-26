@@ -138,48 +138,55 @@ CREATE TABLE MANGO_DB.BI_Hecho_Alquiler(
 -- Tenemos que sacar los datos de las tablas del esquema transaccional
 
 -- Tiempo (VER si falta alguna fecha o si sobra)
-    INSERT INTO MANGO_DB.BI_tiempo (anio, cuatri)
+    INSERT INTO MANGO_DB.BI_tiempo (anio, cuatrimestre, mes)
     (SELECT DISTINCT
-        YEAR(fecha_inicio),
+        YEAR(fecha_inicio) as 'anio',
         (CASE WHEN MONTH(fecha_inicio) IN (1,2,3,4)    THEN 1
               WHEN MONTH(fecha_inicio) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha_inicio) IN (9,10,11,12) THEN 3 END)
+              WHEN MONTH(fecha_inicio) IN (9,10,11,12) THEN 3 END) as 'cuatrimestre',
+		MONTH(fecha_inicio) as 'mes'
     FROM MANGO_DB.alquiler
     UNION
     SELECT DISTINCT
         YEAR(fecha_fin),
         (CASE WHEN MONTH(fecha_fin) IN (1,2,3,4)    THEN 1
               WHEN MONTH(fecha_fin) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha_fin) IN (9,10,11,12) THEN 3 END)
+              WHEN MONTH(fecha_fin) IN (9,10,11,12) THEN 3 END),
+		MONTH(fecha_fin)
     FROM MANGO_DB.alquiler
         UNION
     SELECT DISTINCT
         YEAR(fecha_publicacion),
         (CASE WHEN MONTH(fecha_publicacion) IN (1,2,3,4)    THEN 1
               WHEN MONTH(fecha_publicacion) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha_publicacion) IN (9,10,11,12) THEN 3 END)
-    FROM MANGO_DB.anuncio)
+              WHEN MONTH(fecha_publicacion) IN (9,10,11,12) THEN 3 END),
+		MONTH(fecha_publicacion)
+    FROM MANGO_DB.anuncio
         UNION
     SELECT DISTINCT
         YEAR(fecha),
         (CASE WHEN MONTH(fecha) IN (1,2,3,4)    THEN 1
               WHEN MONTH(fecha) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha) IN (9,10,11,12) THEN 3 END)
-    FROM MANGO_DB.venta)
+              WHEN MONTH(fecha) IN (9,10,11,12) THEN 3 END),
+		MONTH(fecha)
+    FROM MANGO_DB.venta
         UNION
     SELECT DISTINCT
         YEAR(fecha_pago),
         (CASE WHEN MONTH(fecha_pago) IN (1,2,3,4)    THEN 1
               WHEN MONTH(fecha_pago) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha_pago) IN (9,10,11,12) THEN 3 END)
-    FROM MANGO_DB.pago_alquiler)
+              WHEN MONTH(fecha_pago) IN (9,10,11,12) THEN 3 END),
+		MONTH(fecha_pago)
+    FROM MANGO_DB.pago_alquiler
         UNION
     SELECT DISTINCT
         YEAR(fecha_vencimiento),
         (CASE WHEN MONTH(fecha_vencimiento) IN (1,2,3,4)    THEN 1
               WHEN MONTH(fecha_vencimiento) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha_vencimiento) IN (9,10,11,12) THEN 3 END)
+              WHEN MONTH(fecha_vencimiento) IN (9,10,11,12) THEN 3 END),
+		MONTH(fecha_vencimiento)
     FROM MANGO_DB.pago_alquiler)
+	ORDER BY anio
 
 -- Ubicacion
 
