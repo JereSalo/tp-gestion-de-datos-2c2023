@@ -181,11 +181,13 @@ CREATE TABLE MANGO_DB.BI_Hecho_Alquiler(
               WHEN MONTH(fecha_vencimiento) IN (9,10,11,12) THEN 3 END)
     FROM MANGO_DB.pago_alquiler)
 
--- Ubicacion (VER estrategia)
+-- Ubicacion
 
--- SELECT * FROM MANGO_DB.pago_venta
--- SELECT * FROM MANGO_DB.pago_alquiler
--- SELECT * FROM MANGO_DB.estado_anuncio -- Importa vendido o alquilado
+INSERT INTO MANGO_DB.BI_Ubicacion (provincia, localidad, barrio)
+SELECT DISTINCT p.nombre as provincia, l.nombre as localidad, b.nombre as barrio
+FROM MANGO_DB.inmueble i JOIN MANGO_DB.localidad l ON i.id_localidad = l.id
+						JOIN MANGO_DB.provincia p ON l.id_provincia = p.id
+						JOIN MANGO_DB.barrio b ON b.id = i.id_barrio
 
 -- Sucursal
 
