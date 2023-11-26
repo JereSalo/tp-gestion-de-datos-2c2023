@@ -22,9 +22,7 @@ BEGIN
 END
 GO
 
-
 /* ------- CREACION DE LAS DIMENSIONES ------- */
-
 CREATE TABLE MANGO_DB.BI_Tiempo (
 	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
 	anio NUMERIC(18,0),
@@ -46,11 +44,9 @@ CREATE TABLE MANGO_DB.BI_Sucursal(
     -- direccion NVARCHAR(100), -- Probablemente innecesario, no veo que lo pidan.
 );
 
-CREATE TABLE MANGO_DB.BI_Rango_etario_agentes_inquilinos(
+CREATE TABLE MANGO_DB.BI_Rango_etario(
 	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
-	rango NVARCHAR(100),
-	-- cant_agentes NUMERIC(18,0), -- No tengo idea si sirve
-	-- cant_inquilinos NUMERIC(18,0) -- No tengo idea si sirve
+	rango NVARCHAR(100)
 );
 
 CREATE TABLE MANGO_DB.BI_Tipo_Inmueble(
@@ -66,7 +62,6 @@ CREATE TABLE MANGO_DB.BI_Ambientes(
 CREATE TABLE MANGO_DB.BI_Rango_m2(
 	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
 	rango NVARCHAR(100)
-	-- Capaz se puede agregar cant_agentes y cant_inquilinos
 );
 
 CREATE TABLE MANGO_DB.BI_Tipo_Operacion(
@@ -79,49 +74,112 @@ CREATE TABLE MANGO_DB.BI_Tipo_Moneda (
 	descripcion NVARCHAR(100)
 );
 
-CREATE TABLE MANGO_DB.BI_Anuncio (
+CREATE TABLE MANGO_DB.BI_Alquiler (
 	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
-    fecha_publicacion DATETIME,
-    precio_publicado NUMERIC(18,2),
-    --costo_anuncio NUMERIC(18,2), -- creo q no importa
-    fecha_finalizacion DATETIME,
-    tipo_periodo NVARCHAR(100), -- No se si importa
-);
+)
 
-/* ------- CREACION DEL HECHO ------- */
 
-CREATE TABLE MANGO_DB.BI_Hecho (
-	id_ubicacion NUMERIC(18,0),
-	id_tiempo NUMERIC(18,0),
+/* ------- CREACION DE LOS HECHOS ------- */
+
+-- POR AHORA PLANTEAMOS CREAR 3 HECHOS, DE ANUNCIOS, DE VENTAS (CON PAGO DE VENTAS) 
+-- Y DE ALQUILERES (CON CADA PAGO DE ALQUILER)
+
+CREATE TABLE MANGO_DB.BI_Hecho_anuncio (
+	id_ubicacion NUMERIC(18,0), 	-- Barrio necesario
+	id_tiempo NUMERIC(18,0), 		-- Cuatri y año
 	id_sucursal NUMERIC(18,0),
-	id_rango_etario NUMERIC(18,0),
+	id_rango_etario_agente NUMERIC(18,0),
 	id_tipo_inmueble NUMERIC(18,0),
 	id_ambientes NUMERIC(18,0),
 	id_rango_m2 NUMERIC(18,0),
 	id_tipo_operacion NUMERIC(18,0),
 	id_tipo_moneda NUMERIC(18,0),
-	id_anuncio NUMERIC(18,0)
+	
+	sumatoria_precio NUMERIC(18,2),
+	sumatoria_duracion NUMERIC(18,0),
+	cantidad_anuncios NUMERIC(18,0),
+	--fecha_publicacion DATETIME,
+	--precio_publicado NUMERIC(18,2),
+	--fecha_finalizacion DATETIME,
 
 	FOREIGN KEY (id_ubicacion) REFERENCES MANGO_DB.BI_Ubicacion(id),
     FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id),
     FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.BI_Sucursal(id),
-    FOREIGN KEY (id_rango_etario) REFERENCES MANGO_DB.BI_Rango_etario_agentes_inquilinos(id),
+    FOREIGN KEY (id_rango_etario_agente) REFERENCES MANGO_DB.BI_Rango_etario(id),
     FOREIGN KEY (id_tipo_inmueble) REFERENCES MANGO_DB.BI_Tipo_Inmueble(id),
     FOREIGN KEY (id_ambientes) REFERENCES MANGO_DB.BI_Ambientes(id),
     FOREIGN KEY (id_rango_m2) REFERENCES MANGO_DB.BI_Rango_m2(id),
     FOREIGN KEY (id_tipo_operacion) REFERENCES MANGO_DB.BI_Tipo_Operacion(id),
     FOREIGN KEY (id_tipo_moneda) REFERENCES MANGO_DB.BI_Tipo_Moneda(id),
-	FOREIGN KEY (id_anuncio) REFERENCES MANGO_DB.BI_Anuncio(id),
 
-	PRIMARY KEY (id_ubicacion, id_tiempo, id_sucursal, id_rango_etario, id_tipo_inmueble, id_ambientes, id_rango_m2, id_tipo_operacion, id_tipo_moneda, id_anuncio)
+	PRIMARY KEY (id_ubicacion, id_tiempo, id_sucursal, id_rango_etario, id_tipo_inmueble, id_ambientes, id_rango_m2, id_tipo_operacion, id_tipo_moneda)
+);
+
+CREATE TABLE MANGO_DB.BI_Hecho_Venta(
+	--id_anuncio NUMERIC(18,0) 		-- EN REALIDAD SERIAN TODAS LAS PK DEL HECHO ANUNCIO
+	id_moneda NUMERIC(18,0),
+	id_tiempo NUMERIC(18,0),
+	id_medio_pago NUMERIC(18,0),
+	id_rango_m2 NUMERIC(18,0),
+	id_tipo_inmueble NUMERIC(18,0),
+
+	precio_venta NUMERIC(18,2),
+	comision NUMERIC(18,2),
+	cotizacion NUMERIC(18,2),
+	pago_venta_importe NUMERIC(18,2),
+);
+
+CREATE TABLE MANGO_DB.BI_Hecho_Alquiler(
+
 );
 
 /* ------- CARGA DE LAS DIMENSIONES ------- */
 
 -- Tenemos que sacar los datos de las tablas del esquema transaccional
 
--- Tiempo (VER estrategia)
-
+-- Tiempo (VER si falta alguna fecha o si sobra)
+    INSERT INTO MANGO_DB.BI_tiempo (anio, cuatri)
+    (SELECT DISTINCT
+        YEAR(fecha_inicio),
+        (CASE WHEN MONTH(fecha_inicio) IN (1,2,3,4)    THEN 1
+              WHEN MONTH(fecha_inicio) IN (5,6,7,8)    THEN 2
+              WHEN MONTH(fecha_inicio) IN (9,10,11,12) THEN 3 END)
+    FROM MANGO_DB.alquiler
+    UNION
+    SELECT DISTINCT
+        YEAR(fecha_fin),
+        (CASE WHEN MONTH(fecha_fin) IN (1,2,3,4)    THEN 1
+              WHEN MONTH(fecha_fin) IN (5,6,7,8)    THEN 2
+              WHEN MONTH(fecha_fin) IN (9,10,11,12) THEN 3 END)
+    FROM MANGO_DB.alquiler
+        UNION
+    SELECT DISTINCT
+        YEAR(fecha_publicacion),
+        (CASE WHEN MONTH(fecha_publicacion) IN (1,2,3,4)    THEN 1
+              WHEN MONTH(fecha_publicacion) IN (5,6,7,8)    THEN 2
+              WHEN MONTH(fecha_publicacion) IN (9,10,11,12) THEN 3 END)
+    FROM MANGO_DB.anuncio)
+        UNION
+    SELECT DISTINCT
+        YEAR(fecha),
+        (CASE WHEN MONTH(fecha) IN (1,2,3,4)    THEN 1
+              WHEN MONTH(fecha) IN (5,6,7,8)    THEN 2
+              WHEN MONTH(fecha) IN (9,10,11,12) THEN 3 END)
+    FROM MANGO_DB.venta)
+        UNION
+    SELECT DISTINCT
+        YEAR(fecha_pago),
+        (CASE WHEN MONTH(fecha_pago) IN (1,2,3,4)    THEN 1
+              WHEN MONTH(fecha_pago) IN (5,6,7,8)    THEN 2
+              WHEN MONTH(fecha_pago) IN (9,10,11,12) THEN 3 END)
+    FROM MANGO_DB.pago_alquiler)
+        UNION
+    SELECT DISTINCT
+        YEAR(fecha_vencimiento),
+        (CASE WHEN MONTH(fecha_vencimiento) IN (1,2,3,4)    THEN 1
+              WHEN MONTH(fecha_vencimiento) IN (5,6,7,8)    THEN 2
+              WHEN MONTH(fecha_vencimiento) IN (9,10,11,12) THEN 3 END)
+    FROM MANGO_DB.pago_alquiler)
 
 -- Ubicacion (VER estrategia)
 
@@ -135,9 +193,9 @@ INSERT INTO MANGO_DB.BI_Sucursal (codigo, nombre)
 SELECT DISTINCT s.codigo, s.nombre
 FROM MANGO_DB.sucursal s
 
--- BI_Rango_etario_agentes_inquilinos
+-- BI_Rango_etario
 
-INSERT INTO MANGO_DB.BI_Rango_etario_agentes_inquilinos (rango)
+INSERT INTO MANGO_DB.BI_Rango_etario (rango)
 VALUES ('<25'), ('25-35'), ('35-50'), ('>50')
 
 -- BI_Tipo_Inmueble
@@ -168,11 +226,6 @@ INSERT INTO MANGO_DB.BI_Tipo_Moneda (descripcion)
 SELECT DISTINCT m.descripcion
 FROM MANGO_DB.moneda m
 
--- BI_Anuncio
-INSERT INTO MANGO_DB.BI_Anuncio (fecha_publicacion, precio_publicado, 
-								 fecha_finalizacion, tipo_periodo)
-SELECT a.fecha_publicacion, a.precio_publicado, a.fecha_finalizacion, a.tipo_periodo
-FROM MANGO_DB.anuncio a
 
 /* ------- CARGA DEL HECHO ------- */
 /*
@@ -203,7 +256,7 @@ ORDER BY YEAR(BI_anun.fecha_publicacion), MANGO_DB.getCuatrimestre(BI_anun.fecha
 --WITH CHECK OPTION
 
 -- TODO ARREGLAR LOS CASE HORRIBLES ESTOS --
-CREATE VIEW precio_promedio_de_anuncios_de_inmuebles (precio_promedio, tipo_operacion, anio, cuatrimestre, tipo_inmueble, rango_m2, divisa)					-- PARA TIPO_OPERACION, TIPO_INMUEBLE, RANGO_M2, TIPO_MONEDA Y ¿TIEMPO?
+CREATE VIEW precio_promedio_de_anuncios_de_inmuebles (precio_promedio, tipo_operacion, anio, cuatrimestre, tipo_inmueble, rango_m2, divisa)	
 AS 
 SELECT AVG(a.precio_publicado) AS precio_promedio,
 		m.descripcion, 
@@ -244,9 +297,10 @@ GROUP BY tipOp.tipo,
          m.descripcion
 ORDER BY YEAR(a.fecha_publicacion) ASC, cuatrimestre, t.tipo, tipOp.tipo, m.descripcion, rangoSuperficie
 
-CREATE VIEW cinco_barrios_mas_elegidos_para_alquilar (ubicacion)					-- PARA UBICACION, RANGO ETARIO Y TAL VEZ TIPO_OPERACION?
+CREATE VIEW cinco_barrios_mas_elegidos_para_alquilar (ubicacion)		-- PARA UBICACION, RANGO ETARIO Y TAL VEZ TIPO_OPERACION?
 AS 
-SELECT * FROM gd_esquema.Maestra
+SELECT TOP 5 u.barrio 
+FROM MANGO_DB.BI_Ubicacion u JOIN MANGO_DB.BI_Tiempo t ON ()
 --WITH CHECK OPTION
 
 CREATE VIEW porcentaje_incumplimiento_pagos_de_alquileres_en_termino (porcentaje)	-- PARA TIPO_OPERACION? Y TIEMPO
@@ -254,27 +308,27 @@ AS
 SELECT * FROM gd_esquema.Maestra
 --WITH CHECK OPTION
 
-CREATE VIEW porcentaje_promedio_incremento_valor_de_alquileres (porcentaje)			-- PARA TIEMPO Y ????
+CREATE VIEW porcentaje_promedio_incremento_valor_de_alquileres (porcentaje)		-- PARA TIEMPO Y ????
 AS 
 SELECT * FROM gd_esquema.Maestra
 --WITH CHECK OPTION
 
-CREATE VIEW precio_promedio_de_m2_de_la_venta (precio)								-- PARA TIPO_INMUEBLE, UBICACION, TIEMPO, TIPO_OPERACION Y �SUCURSAL?
+CREATE VIEW precio_promedio_de_m2_de_la_venta (precio)							-- PARA TIPO_INMUEBLE, UBICACION, TIEMPO, TIPO_OPERACION Y �SUCURSAL?
 AS 
 SELECT * FROM gd_esquema.Maestra
 --WITH CHECK OPTION
 
-CREATE VIEW valor_promedio_de_la_comision (valor)									-- PARA TIPO_OPERACION, SUCURSAL Y �TIEMPO??
+CREATE VIEW valor_promedio_de_la_comision (valor)								-- PARA TIPO_OPERACION, SUCURSAL Y �TIEMPO??
 AS 
 SELECT * FROM gd_esquema.Maestra
 --WITH CHECK OPTION
 
-CREATE VIEW porcentaje_de_operaciones_concretadas (operaciones)						-- PARA TIPO_OPERACION, SUCURSAL, RANGO ETARIO Y �TIEMPO?
+CREATE VIEW porcentaje_de_operaciones_concretadas (operaciones)					-- PARA TIPO_OPERACION, SUCURSAL, RANGO ETARIO Y �TIEMPO?
 AS 
 SELECT * FROM gd_esquema.Maestra
 --WITH CHECK OPTION
 
-CREATE VIEW monto_total_de_cierre_de_contratos_por_tipo_de_operacion (total)		-- PARA TIPO_OPERACION, TIEMPO, SUCURSAL Y TIPO_MONEDA
+CREATE VIEW monto_total_de_cierre_de_contratos_por_tipo_de_operacion (total)	-- PARA TIPO_OPERACION, TIEMPO, SUCURSAL Y TIPO_MONEDA
 AS 
 SELECT * FROM gd_esquema.Maestra
 --WITH CHECK OPTION

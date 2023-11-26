@@ -37,3 +37,16 @@ FROM gd_esquema.Maestra
 WHERE PROPIETARIO_DNI IS NOT NULL
 GROUP BY PROPIETARIO_DNI, PROPIETARIO_NOMBRE
 HAVING COUNT(*) > 1
+
+
+
+-- BI TESTING
+
+-- Caso de prueba para fecha de pago posterior a fecha de vencimiento. CLIENTE IRRESPONSABLE!
+BEGIN TRANSACTION
+
+UPDATE MANGO_DB.pago_alquiler
+SET fecha_vencimiento = getdate() WHERE codigo = 178
+
+SELECT * FROM MANGO_DB.pago_alquiler WHERE fecha_pago > fecha_vencimiento
+ROLLBACK TRANSACTION

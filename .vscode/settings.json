@@ -1,0 +1,7 @@
+{
+    "problems.decorations.enabled": false,
+    "problems.autoReveal": true,
+    "outline.problems.colors": false,
+    "outline.problems.badges": false,
+    "outline.problems.enabled": false
+}
