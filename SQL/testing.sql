@@ -87,3 +87,4 @@ CREATE TABLE MANGO_DB.BI_Hecho_anuncio (
 -- Pero primero en realidad tengo que cargar ubicacion...
 
 
+SELECT * FROM MANGO_DB.barrio
