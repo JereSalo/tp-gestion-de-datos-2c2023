@@ -169,8 +169,9 @@ CREATE TABLE MANGO_DB.BI_Hecho_Venta(
 	id_rango_m2	NUMERIC(18,0),
 
 	sumatoria_m2_inmueble NUMERIC(18,2) NULL,
-	sumatoria_precio_venta NUMERIC(18,2) NULL,
+	sumatoria_precio_venta NUMERIC(18,2) NULL,	-- SE USO NOMAS EN EL INSERT
 	sumatoria_comisiones NUMERIC(18,2) NULL,
+	cantidad_ventas_concretadas NUMERIC(18,2)
 
 	FOREIGN KEY (id_tipo_inmueble) REFERENCES MANGO_DB.BI_Tipo_Inmueble(id),
     FOREIGN KEY (id_ubicacion) REFERENCES MANGO_DB.BI_Ubicacion(id),
@@ -184,8 +185,8 @@ CREATE TABLE MANGO_DB.BI_Hecho_Alquiler(
 	id_tiempo NUMERIC(18,0),
 	id_sucursal NUMERIC(18,0),
 
-	cantidad_dados_de_alta INT NULL,
-	sumatoria_comisiones NUMERIC(18,2) NULL,
+	cantidad_alquileres_concretados INT NULL,
+	sumatoria_comisiones NUMERIC(18,2) NULL
 
 	FOREIGN KEY (id_rango_etario_inquilino) REFERENCES MANGO_DB.BI_Rango_etario(id),
 	FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id),
@@ -327,7 +328,6 @@ GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
 
 -- ERROR QUE TIRA: Each GROUP BY expression must contain at least one column that is not an outer reference.
 
-
 UPDATE MANGO_DB.BI_Hecho_Anuncio
 SET cantidad_operaciones_concretadas = (SELECT COUNT(a.fecha_finalizacion)
 										FROM MANGO_DB.anuncio a
@@ -339,8 +339,7 @@ SET sumatoria_monto_por_cierre = (SELECT SUM(a.precio_publicado)
 									FROM MANGO_DB.anuncio a
 									WHERE a.fecha_finalizacion IS NOT NULL
 									)
-SET 
--- TODO TERMINAR BI_HECHO_ANUNCIO
+
 
 -- BI_Hecho_Venta
 -- sum_precio_venta en base a la localidad, el tipo_inmueble y tiempo
@@ -365,7 +364,7 @@ GROUP BY bti.id, biubi.id, biti.id, bis.id, inm.superficie_total
 
 -- BI_Hecho_Alquiler ACLARACION: CARGAR LA FECHA DE ALTA en id tiempo		
 INSERT INTO MANGO_DB.BI_Hecho_Alquiler(id_rango_etario_inquilino, id_tiempo, id_sucursal,
-										cantidad_dados_de_alta, sumatoria_comisiones)
+										cantidad_alquileres_concretados, sumatoria_comisiones)
 SELECT birg.id, biti.id, bis.id, COUNT(*), SUM(alq.comision)
 FROM MANGO_DB.alquiler alq LEFT JOIN MANGO_DB.inquilino inq ON (alq.id_inquilino = inq.id)
 						LEFT JOIN MANGO_DB.BI_Rango_Etario birg ON (birg.rango = MANGO_DB.getRangoEtario(inq.fecha_nac))
@@ -425,7 +424,6 @@ GROUP BY sumatoria_precio, COUNT(*), bi_to.tipo, bi_ti.tipo, bi_rango.rango, bi_
 ORDER BY bi_to.tipo, bi_ubi.barrio, bi_ha.id_tipo_inmueble, bi_tiempo.cuatrimestre, bi_tiempo.anio, bi_tiempo_cuatrimestre
 
 -- VISTA 3
-
 -- TODO ACOMODAR LOS NOMBRES-- PROBAR PORQUE NO SE SI FUNCIONA COMO CREO!!-- TODO ACOMODAR LOS NOMBRES
 CREATE VIEW barrios_mas_elegidos_alquiler AS
 SELECT TOP 5
@@ -438,7 +436,7 @@ FROM BI_Hecho_Alquiler bi_ha
 	LEFT JOIN MANGO_DB.BI_Rango_Etario bi_re ON bi_re.id = bi_ha.id_rango_etario,
 	LEFT JOIN MANGO_DB.BI_Tiempo bi_ti ON bi_ti.id = bi_ha.id_tiempo
 GROUP BY biMANGO_DB._ubi.barrio, bi_re.rango, bi_ti.cuatrimestre, bi_ti.cuatrimestre, bi_ti.anio
-ORDER BY bi_ha.cantidad_dados_de_alta
+ORDER BY bi_ha.cantidad_alquileres_concretados
 
 -- VISTA 4
 -- TODO ACOMODAR LOS NOMBRES
@@ -472,19 +470,57 @@ GROUP BY bi_ti.tipo ,bi_tie.cuatrimestre, bi_tie.anio
 
 -- VISTA 7
 -- TODO ACOMODAR LOS NOMBRES
-CREATE VIEW valor_promedio_de_la_comision (valor)								-- PARA TIPO_OPERACION, SUCURSAL Y �TIEMPO??
-AS 
-SELECT * FROM gd_esquema.Maestra
---WITH CHECK OPTION
+-- SI NO FUNCIONA, CAMBIAR LOS NOMBRES DE LAS COLUMNAS EN COMUN Y NO HACERLAS STRING SINO NOMBRE DIRECTO
+CREATE VIEW comision_promedio AS
+SELECT 'Comision promedio', 'Tipo operacion', 'Sucursal', 'Cuatrimestre', 'Anio'
+FROM (
+	SELECT 
+		bi_ha.sumatoria_comisiones / bi_ha.cantidad_alquileres_concretados AS 'Comision promedio',
+		'Alquiler' AS 'Tipo operacion',
+		bi_s.nombre AS 'Sucursal',
+		bi_tie.cuatrimestre AS 'Cuatrimestre',
+		bi_tie.anio AS 'Anio',
+	FROM BI_Hecho_Alquiler bi_ha
+		LEFT JOIN BI_Sucursal bi_s ON bi_s.id = bi_ha.id_sucursal,
+		LEFT JOIN BI_Tiempo bi_tie ON bi_tie.id = bi_ha.id_tiempo
+	GROUP BY bi_ha.sumatoria_comisiones, bi_ha.cantidad_alquileres_concretados, bi_s.nombre, bi_tie.cuatrimestre, bi_tie.anio
+	) AS Tabla_alquileres
+UNION
+SELECT 'Comision promedio', 'Tipo operacion', 'Sucursal', 'Cuatrimestre', 'Anio'
+FROM (
+	SELECT
+		bi_hv.sumatoria_comisiones / bi_hv.cantidad_ventas_concretadas AS 'Comision promedio',
+		'Venta' AS 'Tipo operacion',
+		bi_s.nombre AS 'Sucursal',
+		bi_tie.cuatrimestre AS 'Cuatrimestre',
+		bi_tie.anio AS 'Anio',
+	FROM BI_Hecho_Venta bi_hv
+		LEFT JOIN BI_Sucursal bi_s ON bi_s.id = bi_hv.id_sucursal,
+		LEFT JOIN BI_Tiempo bi_tie ON bi_tie.id = bi_hv.id_tiempo
+	GROUP BY bi_ha.sumatoria_comisiones, bi_ha.cantidad_ventas_concretadas, bi_s.nombre, bi_tie.cuatrimestre, bi_tie.anio
+	) AS Tabla_ventas
+
+-- cantidad_ventas_concretadas no existe en BI_Hecho_Venta
+-- cantidad_alquileres_concretados no existe en BI_Hecho_Alquiler
+
 
 -- VISTA 8
 -- TODO ACOMODAR LOS NOMBRES
-CREATE VIEW porcentaje_de_operaciones_concretadas (operaciones)					-- PARA TIPO_OPERACION, SUCURSAL, RANGO ETARIO Y �TIEMPO?
-AS 
-SELECT * FROM gd_esquema.Maestra
---WITH CHECK OPTION
+CREATE VIEW porcentaje_operaciones_concretadas AS
+SELECT 
+	(bi_hanc.cantidad_operaciones_concretadas * 100) / bi_hanc.cantidad_anuncios_totales AS 'Porcentaje', 
+	bi_to.tipo AS 'Tipo operacion', 
+	bi_s.nombre AS 'Sucursal', 
+	bi_rangoE.rango AS 'Rango etario', 
+	bi_tie.anio AS 'Anio'
+FROM BI_Hecho_Anuncio bi_hanc
+	LEFT JOIN BI_Tipo_Operacion bi_to ON bi_to.id = bi_hanc.id_tipo_operacion,
+	LEFT JOIN BI_Sucursal bi_s ON bi_s.id = bi_hanc.id_sucursal,
+	LEFT JOIN BI_Rango_etario bi_rangoE ON bi_rangoE.id = bi_hanc.id_rango_etario_agente,
+	LEFT JOIN BI_Tiempo bi_tie ON bi_tie.id = bi_hanc.id_tiempo
+GROUP BY bi_tie.anio, bi_rangoE.rango, bi_s.nombre, bi_to.tipo, bi_hanc.cantidad_anuncios_totales
 
-
+-- Agregar cantidad_anuncios_totales y id_sucursal
 
 -- VISTA 9
 -- TODO ACOMODAR LOS NOMBRES CREATE VIEW monto_total_de_cierre_de_contratos_por_tipo_de_operacion (total)	-- PARA TIPO_OPERACION, TIEMPO, SUCURSAL Y TIPO_MONEDA
