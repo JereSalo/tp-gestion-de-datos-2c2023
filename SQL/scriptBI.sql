@@ -3,6 +3,11 @@ Script Bussiness Inteligence
 */
 
 USE GD2C2023
+GO
+
+/* ------- DROPEO DE LAS FUNCIONES SI EXISTEN ------- */
+EXEC MANGO_DB.BorrarFuncionesBI;
+GO
 
 /* ------- CREACION DE LAS FUNCIONES ------- */
 CREATE FUNCTION MANGO_DB.getCuatrimestre (@fecha DATE)
@@ -60,6 +65,11 @@ BEGIN
 	RETURN @rango
 END
 GO
+
+/* ------- DROPEO DE HECHOS Y DIMENSIONES SI EXISTEN ------- */
+
+EXEC MANGO_DB.BorrarTablasBI; -- Esto después lo sacamos, es para que podamos ejecutarlo varias veces sin problemas...
+
 
 /* ------- CREACION DE LAS DIMENSIONES ------- */
 CREATE TABLE MANGO_DB.BI_Tiempo (
@@ -133,10 +143,10 @@ CREATE TABLE MANGO_DB.BI_Hecho_Anuncio (
 	id_tipo_operacion NUMERIC(18,0),
 	id_tipo_moneda NUMERIC(18,0),
 	
-	sumatoria_precio NUMERIC(18,2),
-	sumatoria_duracion NUMERIC(18,0),
-	cantidad_operaciones_concretadas NUMERIC(18,0),
-	sumatoria_monto_por_cierre NUMERIC(18,2),
+	sumatoria_precio NUMERIC(18,2) NULL,
+	sumatoria_duracion NUMERIC(18,0) NULL,
+	cantidad_operaciones_concretadas NUMERIC(18,0) NULL,
+	sumatoria_monto_por_cierre NUMERIC(18,2) NULL,
 
 	FOREIGN KEY (id_ubicacion) REFERENCES MANGO_DB.BI_Ubicacion(id),
     FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id),
@@ -158,9 +168,9 @@ CREATE TABLE MANGO_DB.BI_Hecho_Venta(
 	id_sucursal NUMERIC(18,0),
 	id_rango_m2	NUMERIC(18,0),
 
-	sumatoria_m2_inmueble NUMERIC(18,2),
-	sumatoria_precio_venta NUMERIC(18,2),
-	sumatoria_comisiones NUMERIC(18,2),
+	sumatoria_m2_inmueble NUMERIC(18,2) NULL,
+	sumatoria_precio_venta NUMERIC(18,2) NULL,
+	sumatoria_comisiones NUMERIC(18,2) NULL,
 
 	FOREIGN KEY (id_tipo_inmueble) REFERENCES MANGO_DB.BI_Tipo_Inmueble(id),
     FOREIGN KEY (id_ubicacion) REFERENCES MANGO_DB.BI_Ubicacion(id),
@@ -174,8 +184,8 @@ CREATE TABLE MANGO_DB.BI_Hecho_Alquiler(
 	id_tiempo NUMERIC(18,0),
 	id_sucursal NUMERIC(18,0),
 
-	cantidad_dados_de_alta INT,
-	sumatoria_comisiones NUMERIC(18,2),
+	cantidad_dados_de_alta INT NULL,
+	sumatoria_comisiones NUMERIC(18,2) NULL,
 
 	FOREIGN KEY (id_rango_etario_inquilino) REFERENCES MANGO_DB.BI_Rango_etario(id),
 	FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id),
@@ -185,10 +195,10 @@ CREATE TABLE MANGO_DB.BI_Hecho_Alquiler(
 CREATE TABLE MANGO_DB.BI_Hecho_Pago_Alquiler(
 	id_tiempo NUMERIC(18,0),
 	
-	cantidad_pagos_totales NUMERIC(18,0),
-	cantidad_pagos_en_termino NUMERIC(18,0),
-	sumatoria_incrementos NUMERIC(18,2),
-	cantidad_alquileres_incrementados NUMERIC(18,0),
+	cantidad_pagos_totales NUMERIC(18,0) NULL,
+	cantidad_pagos_en_termino NUMERIC(18,0) NULL,
+	sumatoria_incrementos NUMERIC(18,2) NULL,
+	cantidad_alquileres_incrementados NUMERIC(18,0) NULL,
 
 	FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id)
 );
@@ -200,49 +210,37 @@ CREATE TABLE MANGO_DB.BI_Hecho_Pago_Alquiler(
     INSERT INTO MANGO_DB.BI_tiempo (anio, cuatrimestre, mes)
     (SELECT DISTINCT
         YEAR(fecha_inicio) as 'anio',
-        (CASE WHEN MONTH(fecha_inicio) IN (1,2,3,4)    THEN 1
-              WHEN MONTH(fecha_inicio) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha_inicio) IN (9,10,11,12) THEN 3 END) as 'cuatrimestre',
+        MANGO_DB.getCuatrimestre(fecha_inicio) as 'cuatrimestre',
 		MONTH(fecha_inicio) as 'mes'
     FROM MANGO_DB.alquiler
     UNION
     SELECT DISTINCT
         YEAR(fecha_fin) as 'anio',
-        (CASE WHEN MONTH(fecha_fin) IN (1,2,3,4)    THEN 1
-              WHEN MONTH(fecha_fin) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha_fin) IN (9,10,11,12) THEN 3 END),
+        MANGO_DB.getCuatrimestre(fecha_fin),
 		MONTH(fecha_fin)
     FROM MANGO_DB.alquiler
         UNION
     SELECT DISTINCT
         YEAR(fecha_publicacion) as 'anio',
-        (CASE WHEN MONTH(fecha_publicacion) IN (1,2,3,4)    THEN 1
-              WHEN MONTH(fecha_publicacion) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha_publicacion) IN (9,10,11,12) THEN 3 END),
+        MANGO_DB.getCuatrimestre(fecha_publicacion),
 		MONTH(fecha_publicacion)
     FROM MANGO_DB.anuncio
         UNION
     SELECT DISTINCT
         YEAR(fecha) as 'anio',
-        (CASE WHEN MONTH(fecha) IN (1,2,3,4)    THEN 1
-              WHEN MONTH(fecha) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha) IN (9,10,11,12) THEN 3 END),
+        MANGO_DB.getCuatrimestre(fecha),
 		MONTH(fecha)
     FROM MANGO_DB.venta
         UNION
     SELECT DISTINCT
         YEAR(fecha_pago) as 'anio',
-        (CASE WHEN MONTH(fecha_pago) IN (1,2,3,4)    THEN 1
-              WHEN MONTH(fecha_pago) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha_pago) IN (9,10,11,12) THEN 3 END),
+        MANGO_DB.getCuatrimestre(fecha_pago),
 		MONTH(fecha_pago)
     FROM MANGO_DB.pago_alquiler
         UNION
     SELECT DISTINCT
         YEAR(fecha_vencimiento) as 'anio',
-        (CASE WHEN MONTH(fecha_vencimiento) IN (1,2,3,4)    THEN 1
-              WHEN MONTH(fecha_vencimiento) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha_vencimiento) IN (9,10,11,12) THEN 3 END),
+        MANGO_DB.getCuatrimestre(fecha_vencimiento),
 		MONTH(fecha_vencimiento)
     FROM MANGO_DB.pago_alquiler)
 	ORDER BY anio
@@ -295,23 +293,25 @@ SELECT DISTINCT m.descripcion
 FROM MANGO_DB.moneda m
 
 
+-- HASTA ACA SE PUEDE EJECUTAR MULTIPLES VECES Y PARECE ANDAR TODO JOYA
+
 /* ------- CARGA DE LOS HECHOS ------- */
 
 -- BI_Hecho_Anuncio ACLARACION: CARGAR LA FECHA DE ALTA en id tiempo
 INSERT INTO MANGO_DB.BI_Hecho_Anuncio (id_tipo_operacion, id_ubicacion, id_ambientes, id_tiempo, id_tipo_inmueble, 
 									   id_rango_m2, id_tipo_moneda, id_rango_etario_agente, sumatoria_duracion, 
-									   sumatoria_precio, cantidad_operaciones_concretadas, sumatoria_monto_por_cierre)
-SELECT tipoOp.id, u.id, a.id, biti.id, tipoInmu.id, rangoM2.id, tipoMon.id, rangEtAg.id, 
-	   SUM(CAST(DATEDIFF(DAY, a.fecha_publicacion, a.fecha_finalizacion)) AS NUMERIC(18,0)), 
-	   SUM(a.precio_publicado), 
-	   NULL, 
-	   NULL
-FROM MANGO_DB.anuncio a LEFT JOIN MANGO_DB.tipo_operacion tiO ON (a.id_tipo_operacion = tiO.id),
-						LEFT JOIN MANGO_DB.BI_Tipo_Operacion tipoOp ON (tipoOp.tipo = tiO.tipo),
-						LEFT JOIN MANGO_DB.inmueble i ON (a.id_inmueble = i.id)
+									   sumatoria_precio)
+SELECT tipoOp.id, u.id, amb.id, biti.id, tipoInmu.id, rangoM2.id, tipoMon.id, rangEtAg.id,
+	   SUM(CAST(DATEDIFF(DAY, a.fecha_publicacion, a.fecha_finalizacion) AS NUMERIC(18,0))),
+	   SUM(a.precio_publicado)
+FROM MANGO_DB.anuncio a LEFT JOIN MANGO_DB.tipo_operacion tiO ON (a.id_tipo_operacion = tiO.id)
+						LEFT JOIN MANGO_DB.BI_Tipo_Operacion tipoOp ON (tipoOp.tipo = tiO.tipo)
+						LEFT JOIN MANGO_DB.inmueble i ON (a.id_inmueble = i.codigo)
 						LEFT JOIN MANGO_DB.barrio bar ON (bar.id = i.id_barrio)
-						LEFT JOIN MANGO_DB.BI_Ubicacion u ON (u.barrio = bar.nombre)
-						LEFT JOIN MANGO_DB.ambientes ambi ON (amb.id = i.id_ambientes)
+						LEFT JOIN MANGO_DB.localidad loc ON (loc.id = i.id_localidad)
+						LEFT JOIN MANGO_DB.provincia prov ON (prov.id = loc.id_provincia)
+						LEFT JOIN MANGO_DB.BI_Ubicacion u ON (u.barrio = bar.nombre AND u.localidad = loc.nombre AND u.provincia = prov.nombre)
+						LEFT JOIN MANGO_DB.ambientes ambi ON (ambi.id = i.id_cantidad_ambientes)
 						LEFT JOIN MANGO_DB.BI_Ambientes amb ON (amb.detalle = ambi.detalle)
 						LEFT JOIN MANGO_DB.BI_tiempo biti ON (biti.anio = YEAR(a.fecha_publicacion) AND
 															biti.mes = MONTH(a.fecha_publicacion) AND
@@ -325,15 +325,18 @@ FROM MANGO_DB.anuncio a LEFT JOIN MANGO_DB.tipo_operacion tiO ON (a.id_tipo_oper
 						LEFT JOIN MANGO_DB.BI_Rango_etario rangEtAg ON (rangEtAg.rango = MANGO_DB.getRangoEtario(agente.fecha_nac))
 GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
 
+-- ERROR QUE TIRA: Each GROUP BY expression must contain at least one column that is not an outer reference.
+
+
 UPDATE MANGO_DB.BI_Hecho_Anuncio
 SET cantidad_operaciones_concretadas = (SELECT COUNT(a.fecha_finalizacion)
-										FROM MANGO_DB.anuncio
+										FROM MANGO_DB.anuncio a
 										WHERE a.fecha_finalizacion IS NOT NULL
 										)
 						
 UPDATE MANGO_DB.BI_Hecho_Anuncio
 SET sumatoria_monto_por_cierre = (SELECT SUM(a.precio_publicado)
-									FROM MANGO_DB.anuncio
+									FROM MANGO_DB.anuncio a
 									WHERE a.fecha_finalizacion IS NOT NULL
 									)
 SET 
@@ -342,20 +345,20 @@ SET
 -- BI_Hecho_Venta
 -- sum_precio_venta en base a la localidad, el tipo_inmueble y tiempo
 -- sum_m2_inmueble localidad, cuatri, año, tipo
-INSERT INTO MANGO_DB.BI_Hecho_Venta (id_tipo_inmueble, id_ubicacion, id_tiempo, id_sucursal, id_rango_m2 
+INSERT INTO MANGO_DB.BI_Hecho_Venta (id_tipo_inmueble, id_ubicacion, id_tiempo, id_sucursal, id_rango_m2,
 									 sumatoria_m2_inmueble, sumatoria_precio_venta, sumatoria_comisiones)
 SELECT DISTINCT bti.id, biubi.id, biti.id, bis.id, birg.id, SUM(inm.superficie_total), SUM(v.precio_venta), SUM(v.comision)
 FROM MANGO_DB.venta v LEFT JOIN MANGO_DB.anuncio a ON (v.id_anuncio = a.codigo)
-						LEFT JOIN MANGO_DB.inmueble inm ON (a.id_inmueble = inm.codigo),
-						LEFT JOIN MANGO_DB.tipo_Inmueble ti ON (inm.id_tipo_inmueble = ti.id),
-						LEFT JOIN MANGO_DB.BI_Tipo_Inmueble bti ON (bti.tipo = ti.tipo),
-						LEFT JOIN MANGO_DB.localidad l ON (l.id = inm.id_localidad),
-						LEFT JOIN MANGO_DB.BI_Ubicacion biubi ON (biubi.localidad = l.nombre),
+						LEFT JOIN MANGO_DB.inmueble inm ON (a.id_inmueble = inm.codigo)
+						LEFT JOIN MANGO_DB.tipo_Inmueble ti ON (inm.id_tipo_inmueble = ti.id)
+						LEFT JOIN MANGO_DB.BI_Tipo_Inmueble bti ON (bti.tipo = ti.tipo)
+						LEFT JOIN MANGO_DB.localidad l ON (l.id = inm.id_localidad)
+						LEFT JOIN MANGO_DB.BI_Ubicacion biubi ON (biubi.localidad = l.nombre)
 						LEFT JOIN MANGO_DB.BI_tiempo biti ON (biti.anio = YEAR(v.fecha) AND
 															biti.mes = MONTH(v.fecha) AND
-															biti.cuatrimestre = MANGO_DB.getCuatrimestre(v.fecha)),
-						LEFT JOIN MANGO_DB.sucursal suc ON (suc.id_localidad = l.id),
-						LEFT JOIN MANGO_DB.BI_Sucursal bis ON (bis.codigo = suc.id),
+															biti.cuatrimestre = MANGO_DB.getCuatrimestre(v.fecha))
+						LEFT JOIN MANGO_DB.sucursal suc ON (suc.id_localidad = l.id)
+						LEFT JOIN MANGO_DB.BI_Sucursal bis ON (bis.codigo = suc.codigo)
 						LEFT JOIN MANGO_DB.BI_Rango_m2 birg ON (birg.rango = MANGO_DB.getRangoM2(inm.superficie_total))
 GROUP BY bti.id, biubi.id, biti.id, bis.id, inm.superficie_total
 
@@ -364,12 +367,12 @@ GROUP BY bti.id, biubi.id, biti.id, bis.id, inm.superficie_total
 INSERT INTO MANGO_DB.BI_Hecho_Alquiler(id_rango_etario_inquilino, id_tiempo, id_sucursal,
 										cantidad_dados_de_alta, sumatoria_comisiones)
 SELECT birg.id, biti.id, bis.id, COUNT(*), SUM(alq.comision)
-FROM MANGO_DB.alquiler alq LEFT JOIN MANGO_DB.inquilino inq ON (alq.id_inquilino = inq.id),
-						LEFT JOIN MANGO_DB.BI_Rango_Etario birg ON (birg.rango = MANGO_DB.getRangoEtario(inq.fecha_nac)),
+FROM MANGO_DB.alquiler alq LEFT JOIN MANGO_DB.inquilino inq ON (alq.id_inquilino = inq.id)
+						LEFT JOIN MANGO_DB.BI_Rango_Etario birg ON (birg.rango = MANGO_DB.getRangoEtario(inq.fecha_nac))
 						LEFT JOIN MANGO_DB.BI_Tiempo biti ON (biti.anio = YEAR(alq.fecha_inicio) AND
 															biti.mes = MONTH(alq.fecha_inicio) AND
-															biti.cuatrimestre = MANGO_DB.getCuatrimestre(alq.fecha_inicio)),
-						LEFT JOIN MANGO_DB.BI_Sucursal bis ON (bis.codigo = alq.id_sucursal)
+															biti.cuatrimestre = MANGO_DB.getCuatrimestre(alq.fecha_inicio))
+						LEFT JOIN MANGO_DB.BI_Sucursal bis ON (bis.codigo = alq.id_sucursal) -- Aca el sql putea, alq no tiene id_sucursal
 GROUP BY birg.id, biti.id, bis.id, biti.cuatrimestre, biti.anio 
 
 -- BI_Hecho_Pago_Alquiler
@@ -489,4 +492,12 @@ AS
 SELECT * FROM gd_esquema.Maestra
 --WITH CHECK OPTION
 
+
+
+
+-- Borrado de las funciones: Solo para poder volver a ejecutar el mismo .sql sin tocar nada
+
+DROP FUNCTION MANGO_DB.getCuatrimestre
+DROP FUNCTION MANGO_DB.getRangoM2
+DROP FUNCTION MANGO_DB.getRangoEtario
 
