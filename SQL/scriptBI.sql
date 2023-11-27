@@ -337,7 +337,7 @@ SET sumatoria_monto_por_cierre = (SELECT SUM(a.precio_publicado)
 									WHERE a.fecha_finalizacion IS NOT NULL
 									)
 SET 
-
+-- TODO TERMINAR BI_HECHO_ANUNCIO
 
 -- BI_Hecho_Venta
 -- sum_precio_venta en base a la localidad, el tipo_inmueble y tiempo
@@ -376,13 +376,15 @@ GROUP BY birg.id, biti.id, bis.id, biti.cuatrimestre, biti.anio
 INSERT INTO MANGO_DB.BI_Hecho_Pago_Alquiler(id_tiempo, cantidad_pagos_totales, cantidad_pagos_en_termino,
 											sumatoria_incrementos, cantidad_alquileres_incrementados)
 SELECT biti.id, COUNT(*), COUNT(CAST(DATEDIFF(DAY, pag_al.fecha_pago, pag_al.fecha_vencimiento)) AS INTEGER > 0) AS cantidad_pagos_en_termino, 
-		SUM(), COUNT()
+		SUM(), COUNT() -- TERMINAR INCREMENTOS
 FROM MANGO_DB.pago_alquiler pag_al LEFT JOIN MANGO_DB.BI_Tiempo biti ON (biti.anio = YEAR(pag_al.fec_ini) AND
 															biti.mes = MONTH(pag_al.fec_ini) AND
 															biti.cuatrimestre = MANGO_DB.getCuatrimestre(pag_al.fec_ini)),
-									
+GROUP BY biti.id		
 
-/* ------- CREACION DE LAS VISTAS DE LAS DIMENSIONES ------- */
+
+/* ------- CREACION DE LAS VISTAS EN FUNCION DE LAS DIMENSIONES ------- */
+
 -- VISTA 1
 -- TODO ACOMODAR LOS NOMBRES
 CREATE VIEW duracion_promedio_anuncios AS
@@ -447,8 +449,8 @@ FROM BI_Hecho_Pago_Alquiler bi_hpa
 
 
 -- VISTA 5
--- TODO ACOMODAR LOS NOMBRES
-
+-- TODO LA VISTA EN SI!
+-- 
 
 
 -- VISTA 6
