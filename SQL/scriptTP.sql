@@ -80,7 +80,10 @@ CREATE TABLE MANGO_DB.agente (
 	fecha_registro DATETIME,
 	telefono NUMERIC(18,0),
 	mail NVARCHAR(255),
-	fecha_nac DATETIME
+	fecha_nac DATETIME,
+	id_sucursal NUMERIC(18,0)
+
+	FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.sucursal(codigo)
 );
 
 CREATE TABLE MANGO_DB.estado_anuncio (
@@ -378,8 +381,8 @@ SELECT DISTINCT m.ANUNCIO_TIPO_OPERACION
 FROM gd_esquema.Maestra m
 
 -- MANGO_DB.agente
-INSERT INTO MANGO_DB.agente (nombre, apellido, dni, fecha_registro, telefono, mail, fecha_nac)
-SELECT DISTINCT m.AGENTE_NOMBRE, m.AGENTE_APELLIDO, m.AGENTE_DNI, m.AGENTE_FECHA_REGISTRO, m.AGENTE_TELEFONO, m.AGENTE_MAIL, m.AGENTE_FECHA_NAC
+INSERT INTO MANGO_DB.agente (nombre, apellido, dni, fecha_registro, telefono, mail, fecha_nac, id_sucursal)
+SELECT DISTINCT m.AGENTE_NOMBRE, m.AGENTE_APELLIDO, m.AGENTE_DNI, m.AGENTE_FECHA_REGISTRO, m.AGENTE_TELEFONO, m.AGENTE_MAIL, m.AGENTE_FECHA_NAC, m.SUCURSAL_CODIGO
 FROM gd_esquema.Maestra m
 
 -- MANGO_DB.estado_anuncio
