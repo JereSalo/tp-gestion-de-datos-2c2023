@@ -135,7 +135,7 @@ CREATE TABLE MANGO_DB.BI_Alquiler (
 CREATE TABLE MANGO_DB.BI_Hecho_Anuncio (
 	id_ubicacion NUMERIC(18,0),
 	id_tiempo NUMERIC(18,0),
-	--id_sucursal NUMERIC(18,0),
+	id_sucursal NUMERIC(18,0),
 	id_rango_etario_agente NUMERIC(18,0),
 	id_tipo_inmueble NUMERIC(18,0),
 	id_ambientes NUMERIC(18,0),
@@ -147,10 +147,11 @@ CREATE TABLE MANGO_DB.BI_Hecho_Anuncio (
 	sumatoria_duracion NUMERIC(18,0) NULL,
 	cantidad_operaciones_concretadas NUMERIC(18,0) NULL,
 	sumatoria_monto_por_cierre NUMERIC(18,2) NULL,
+	cantidad_anuncios_totales NUMERIC(18,2) NULL
 
 	FOREIGN KEY (id_ubicacion) REFERENCES MANGO_DB.BI_Ubicacion(id),
     FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id),
-    --FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.BI_Sucursal(id),
+    FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.BI_Sucursal(id),
     FOREIGN KEY (id_rango_etario_agente) REFERENCES MANGO_DB.BI_Rango_etario(id),
     FOREIGN KEY (id_tipo_inmueble) REFERENCES MANGO_DB.BI_Tipo_Inmueble(id),
     FOREIGN KEY (id_ambientes) REFERENCES MANGO_DB.BI_Ambientes(id),
@@ -205,9 +206,7 @@ CREATE TABLE MANGO_DB.BI_Hecho_Pago_Alquiler(
 );
 /* ------- CARGA DE LAS DIMENSIONES ------- */
 
--- Tenemos que sacar los datos de las tablas del esquema transaccional
-
--- BI_Tiempo (VER si falta alguna fecha o si sobra)
+-- BI_Tiempo
     INSERT INTO MANGO_DB.BI_tiempo (anio, cuatrimestre, mes)
     (SELECT DISTINCT
         YEAR(fecha_inicio) as 'anio',
@@ -301,10 +300,11 @@ FROM MANGO_DB.moneda m
 -- BI_Hecho_Anuncio ACLARACION: CARGAR LA FECHA DE ALTA en id tiempo
 INSERT INTO MANGO_DB.BI_Hecho_Anuncio (id_tipo_operacion, id_ubicacion, id_ambientes, id_tiempo, id_tipo_inmueble, 
 									   id_rango_m2, id_tipo_moneda, id_rango_etario_agente, sumatoria_duracion, 
-									   sumatoria_precio)
-SELECT tipoOp.id, u.id, amb.id, biti.id, tipoInmu.id, rangoM2.id, tipoMon.id, rangEtAg.id,
-	   SUM(CAST(DATEDIFF(DAY, a.fecha_publicacion, a.fecha_finalizacion) AS NUMERIC(18,0))),
-	   SUM(a.precio_publicado)
+									   sumatoria_precio, id_sucursal)
+SELECT a.id_tipo_operacion, u.id, amb.id, biti.id, tipoInmu.id, rangoM2.id, bisuc.id_sucursal 
+		tipoMon.id, rangEtAg.id, 
+	   SUM(CAST(DATEDIFF(DAY, a.fecha_publicacion, a.fecha_finalizacion) AS NUMERIC(18,0))) AS sumatoriaDias,
+	   SUM(a.precio_publicado) AS precioPublicado
 FROM MANGO_DB.anuncio a LEFT JOIN MANGO_DB.tipo_operacion tiO ON (a.id_tipo_operacion = tiO.id)
 						LEFT JOIN MANGO_DB.BI_Tipo_Operacion tipoOp ON (tipoOp.tipo = tiO.tipo)
 						LEFT JOIN MANGO_DB.inmueble i ON (a.id_inmueble = i.codigo)
@@ -324,9 +324,9 @@ FROM MANGO_DB.anuncio a LEFT JOIN MANGO_DB.tipo_operacion tiO ON (a.id_tipo_oper
 						LEFT JOIN MANGO_DB.BI_Tipo_Moneda tipoMon ON (tipoMon.descripcion = mon.descripcion)
 						LEFT JOIN MANGO_DB.agente agente ON (agente.id = a.id_agente)
 						LEFT JOIN MANGO_DB.BI_Rango_etario rangEtAg ON (rangEtAg.rango = MANGO_DB.getRangoEtario(agente.fecha_nac))
-GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
+						LEFT JOIN MANGO_DB.BI_Sucursal bisuc ON (bisuc.codigo = a.id_sucursal)
+GROUP BY a.id_tipo_operacion, u.id, amb.id, biti.id, tipoInmu.id, rangoM2.id, tipoMon.id, rangEtAg.id;
 
--- ERROR QUE TIRA: Each GROUP BY expression must contain at least one column that is not an outer reference.
 
 UPDATE MANGO_DB.BI_Hecho_Anuncio
 SET cantidad_operaciones_concretadas = (SELECT COUNT(a.fecha_finalizacion)
@@ -342,11 +342,12 @@ SET sumatoria_monto_por_cierre = (SELECT SUM(a.precio_publicado)
 
 
 -- BI_Hecho_Venta
--- sum_precio_venta en base a la localidad, el tipo_inmueble y tiempo
--- sum_m2_inmueble localidad, cuatri, año, tipo
+-- CHEQUEAR cantidad_ventas_concretadas SI ES COUNT(*)
 INSERT INTO MANGO_DB.BI_Hecho_Venta (id_tipo_inmueble, id_ubicacion, id_tiempo, id_sucursal, id_rango_m2,
-									 sumatoria_m2_inmueble, sumatoria_precio_venta, sumatoria_comisiones)
-SELECT DISTINCT bti.id, biubi.id, biti.id, bis.id, birg.id, SUM(inm.superficie_total), SUM(v.precio_venta), SUM(v.comision)
+									 sumatoria_m2_inmueble, sumatoria_precio_venta, sumatoria_comisiones,
+									 cantidad_ventas_concretadas)
+SELECT DISTINCT bti.id, biubi.id, biti.id, bis.id, birg.id, SUM(inm.superficie_total), 
+		SUM(v.precio_venta), SUM(v.comision), COUNT(*)
 FROM MANGO_DB.venta v LEFT JOIN MANGO_DB.anuncio a ON (v.id_anuncio = a.codigo)
 						LEFT JOIN MANGO_DB.inmueble inm ON (a.id_inmueble = inm.codigo)
 						LEFT JOIN MANGO_DB.tipo_Inmueble ti ON (inm.id_tipo_inmueble = ti.id)
@@ -362,7 +363,8 @@ FROM MANGO_DB.venta v LEFT JOIN MANGO_DB.anuncio a ON (v.id_anuncio = a.codigo)
 GROUP BY bti.id, biubi.id, biti.id, bis.id, inm.superficie_total
 
 
--- BI_Hecho_Alquiler ACLARACION: CARGAR LA FECHA DE ALTA en id tiempo		
+-- BI_Hecho_Alquiler 
+-- ACLARACION: CARGAR LA FECHA DE ALTA en id tiempo		
 INSERT INTO MANGO_DB.BI_Hecho_Alquiler(id_rango_etario_inquilino, id_tiempo, id_sucursal,
 										cantidad_alquileres_concretados, sumatoria_comisiones)
 SELECT birg.id, biti.id, bis.id, COUNT(*), SUM(alq.comision)
@@ -505,7 +507,6 @@ FROM (
 
 
 -- VISTA 8
--- TODO ACOMODAR LOS NOMBRES
 CREATE VIEW porcentaje_operaciones_concretadas AS
 SELECT 
 	(bi_hanc.cantidad_operaciones_concretadas * 100) / bi_hanc.cantidad_anuncios_totales AS 'Porcentaje', 
@@ -520,13 +521,24 @@ FROM BI_Hecho_Anuncio bi_hanc
 	LEFT JOIN BI_Tiempo bi_tie ON bi_tie.id = bi_hanc.id_tiempo
 GROUP BY bi_tie.anio, bi_rangoE.rango, bi_s.nombre, bi_to.tipo, bi_hanc.cantidad_anuncios_totales
 
--- Agregar cantidad_anuncios_totales y id_sucursal
+-- Agregar cantidad_anuncios_totales y id_sucursal EN BI_Hecho_Anuncio
 
 -- VISTA 9
--- TODO ACOMODAR LOS NOMBRES CREATE VIEW monto_total_de_cierre_de_contratos_por_tipo_de_operacion (total)	-- PARA TIPO_OPERACION, TIEMPO, SUCURSAL Y TIPO_MONEDA
-AS 
-SELECT * FROM gd_esquema.Maestra
---WITH CHECK OPTION
+-- TODO ACOMODAR LOS NOMBRES
+CREATE VIEW monto_total_de_cierre AS
+SELECT 
+	bi_hanc.sumatoriaMontoPorCierre AS 'Monto total'
+	bi_to.tipo AS 'Tipo operacion',
+	bi_tie.cuatrimestre AS 'Cuatrimestre',
+	bi_suc.nombre AS 'Sucursal',
+	bi_moneda.descripcion AS 'Tipo de moneda'
+FROM BI_Hecho_Anuncio bi_hanc
+	LEFT JOIN BI_Tipo_Operacion bi_to ON bi_to.id = bi_hanc.idTipoOperacion,
+	LEFT JOIN BI_tiempo bi_tie ON bi_tie.id = bi_hanc.idTiempo,
+	LEFT JOIN BI_Sucursal bi_suc ON bi_suc.id = bi_hanc.idSucursal,
+	LEFT JOIN BI_Tipo_Moneda bi_moneda ON bi_moneda.id = bi_hanc.idTipoMoneda
+GROUP BY bi_hanc.sumatoriaMontoPorCierre, bi_to.tipo, bi_tie.cuatrimestre, bi_suc.nombre, bi_moneda.descripcion
+
 
 
 
