@@ -301,14 +301,16 @@ FROM MANGO_DB.moneda m
 INSERT INTO MANGO_DB.BI_Hecho_Anuncio (id_tipo_operacion, id_ubicacion, id_ambientes, id_tiempo, id_tipo_inmueble, 
 									   id_rango_m2, id_tipo_moneda, id_rango_etario_agente, sumatoria_duracion, 
 									   sumatoria_precio)
-SELECT tipoOp.id, u.id, amb.id, biti.id, tipoInmu.id, rangoM2.id, tipoMon.id, rangEtAg.id, -- Decía a.id y le puse amb.id, no se si ta bien lo q hice
+SELECT tipoOp.id, u.id, amb.id, biti.id, tipoInmu.id, rangoM2.id, tipoMon.id, rangEtAg.id,
 	   SUM(CAST(DATEDIFF(DAY, a.fecha_publicacion, a.fecha_finalizacion) AS NUMERIC(18,0))),
 	   SUM(a.precio_publicado)
 FROM MANGO_DB.anuncio a LEFT JOIN MANGO_DB.tipo_operacion tiO ON (a.id_tipo_operacion = tiO.id)
 						LEFT JOIN MANGO_DB.BI_Tipo_Operacion tipoOp ON (tipoOp.tipo = tiO.tipo)
 						LEFT JOIN MANGO_DB.inmueble i ON (a.id_inmueble = i.codigo)
 						LEFT JOIN MANGO_DB.barrio bar ON (bar.id = i.id_barrio)
-						LEFT JOIN MANGO_DB.BI_Ubicacion u ON (u.barrio = bar.nombre)
+						LEFT JOIN MANGO_DB.localidad loc ON (loc.id = i.id_localidad)
+						LEFT JOIN MANGO_DB.provincia prov ON (prov.id = loc.id_provincia)
+						LEFT JOIN MANGO_DB.BI_Ubicacion u ON (u.barrio = bar.nombre AND u.localidad = loc.nombre AND u.provincia = prov.nombre)
 						LEFT JOIN MANGO_DB.ambientes ambi ON (ambi.id = i.id_cantidad_ambientes)
 						LEFT JOIN MANGO_DB.BI_Ambientes amb ON (amb.detalle = ambi.detalle)
 						LEFT JOIN MANGO_DB.BI_tiempo biti ON (biti.anio = YEAR(a.fecha_publicacion) AND
@@ -322,6 +324,9 @@ FROM MANGO_DB.anuncio a LEFT JOIN MANGO_DB.tipo_operacion tiO ON (a.id_tipo_oper
 						LEFT JOIN MANGO_DB.agente agente ON (agente.id = a.id_agente)
 						LEFT JOIN MANGO_DB.BI_Rango_etario rangEtAg ON (rangEtAg.rango = MANGO_DB.getRangoEtario(agente.fecha_nac))
 GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
+
+-- ERROR QUE TIRA: Each GROUP BY expression must contain at least one column that is not an outer reference.
+
 
 UPDATE MANGO_DB.BI_Hecho_Anuncio
 SET cantidad_operaciones_concretadas = (SELECT COUNT(a.fecha_finalizacion)
