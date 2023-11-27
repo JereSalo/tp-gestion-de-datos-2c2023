@@ -83,6 +83,8 @@ CREATE TABLE MANGO_DB.agente (
 	mail NVARCHAR(255),
 	fecha_nac DATETIME,
 	id_sucursal NUMERIC(18,0) NOT NULL,
+
+	FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.sucursal(codigo)
 );
 
 CREATE TABLE MANGO_DB.estado_anuncio (
