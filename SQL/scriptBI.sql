@@ -3,6 +3,7 @@ Script Bussiness Inteligence
 */
 
 USE GD2C2023
+GO
 
 /* ------- CREACION DE LAS FUNCIONES ------- */
 CREATE FUNCTION MANGO_DB.getCuatrimestre (@fecha DATE)
@@ -200,49 +201,37 @@ CREATE TABLE MANGO_DB.BI_Hecho_Pago_Alquiler(
     INSERT INTO MANGO_DB.BI_tiempo (anio, cuatrimestre, mes)
     (SELECT DISTINCT
         YEAR(fecha_inicio) as 'anio',
-        (CASE WHEN MONTH(fecha_inicio) IN (1,2,3,4)    THEN 1
-              WHEN MONTH(fecha_inicio) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha_inicio) IN (9,10,11,12) THEN 3 END) as 'cuatrimestre',
+        MANGO_DB.getCuatrimestre(fecha_inicio) as 'cuatrimestre',
 		MONTH(fecha_inicio) as 'mes'
     FROM MANGO_DB.alquiler
     UNION
     SELECT DISTINCT
         YEAR(fecha_fin) as 'anio',
-        (CASE WHEN MONTH(fecha_fin) IN (1,2,3,4)    THEN 1
-              WHEN MONTH(fecha_fin) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha_fin) IN (9,10,11,12) THEN 3 END),
+        MANGO_DB.getCuatrimestre(fecha_fin),
 		MONTH(fecha_fin)
     FROM MANGO_DB.alquiler
         UNION
     SELECT DISTINCT
         YEAR(fecha_publicacion) as 'anio',
-        (CASE WHEN MONTH(fecha_publicacion) IN (1,2,3,4)    THEN 1
-              WHEN MONTH(fecha_publicacion) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha_publicacion) IN (9,10,11,12) THEN 3 END),
+        MANGO_DB.getCuatrimestre(fecha_publicacion),
 		MONTH(fecha_publicacion)
     FROM MANGO_DB.anuncio
         UNION
     SELECT DISTINCT
         YEAR(fecha) as 'anio',
-        (CASE WHEN MONTH(fecha) IN (1,2,3,4)    THEN 1
-              WHEN MONTH(fecha) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha) IN (9,10,11,12) THEN 3 END),
+        MANGO_DB.getCuatrimestre(fecha),
 		MONTH(fecha)
     FROM MANGO_DB.venta
         UNION
     SELECT DISTINCT
         YEAR(fecha_pago) as 'anio',
-        (CASE WHEN MONTH(fecha_pago) IN (1,2,3,4)    THEN 1
-              WHEN MONTH(fecha_pago) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha_pago) IN (9,10,11,12) THEN 3 END),
+        MANGO_DB.getCuatrimestre(fecha_pago),
 		MONTH(fecha_pago)
     FROM MANGO_DB.pago_alquiler
         UNION
     SELECT DISTINCT
         YEAR(fecha_vencimiento) as 'anio',
-        (CASE WHEN MONTH(fecha_vencimiento) IN (1,2,3,4)    THEN 1
-              WHEN MONTH(fecha_vencimiento) IN (5,6,7,8)    THEN 2
-              WHEN MONTH(fecha_vencimiento) IN (9,10,11,12) THEN 3 END),
+        MANGO_DB.getCuatrimestre(fecha_vencimiento),
 		MONTH(fecha_vencimiento)
     FROM MANGO_DB.pago_alquiler)
 	ORDER BY anio
@@ -489,4 +478,12 @@ AS
 SELECT * FROM gd_esquema.Maestra
 --WITH CHECK OPTION
 
+
+
+
+-- Borrado de las funciones: Solo para poder volver a ejecutar el mismo .sql sin tocar nada
+
+DROP FUNCTION MANGO_DB.getCuatrimestre
+DROP FUNCTION MANGO_DB.getRangoM2
+DROP FUNCTION MANGO_DB.getRangoEtario
 
