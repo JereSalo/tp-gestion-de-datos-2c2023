@@ -18,13 +18,14 @@ SELECT * FROM MANGO_DB.localidad
 SELECT * FROM MANGO_DB.medio_pago
 SELECT * FROM MANGO_DB.moneda
 SELECT * FROM MANGO_DB.orientacion
+-- Hasta aca
 SELECT * FROM MANGO_DB.pago_alquiler
 SELECT * FROM MANGO_DB.pago_venta
 SELECT * FROM MANGO_DB.propietario
-SELECT * FROM MANGO_DB.provincia
-SELECT * FROM MANGO_DB.sucursal
-SELECT * FROM MANGO_DB.tipo_inmueble
-SELECT * FROM MANGO_DB.tipo_operacion
+SELECT * FROM MANGO_DB.provincia -- No
+SELECT * FROM MANGO_DB.sucursal -- No
+SELECT * FROM MANGO_DB.tipo_inmueble -- No
+SELECT * FROM MANGO_DB.tipo_operacion -- No
 SELECT * FROM MANGO_DB.venta
 
 

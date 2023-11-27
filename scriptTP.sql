@@ -223,9 +223,11 @@ CREATE TABLE MANGO_DB.alquiler (
     estado NVARCHAR(100),
     id_anuncio NUMERIC(18,0) NOT NULL,
     id_inquilino NUMERIC(18,0) NOT NULL,
-    
+    id_sucursal NUMERIC(18,0) NOT NULL,
+
     FOREIGN KEY (id_anuncio) REFERENCES MANGO_DB.anuncio(codigo),
-    FOREIGN KEY (id_inquilino) REFERENCES MANGO_DB.inquilino(id)
+    FOREIGN KEY (id_inquilino) REFERENCES MANGO_DB.inquilino(id),
+	FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.sucursal(codigo)
 );
 
 CREATE INDEX ix1_alquiler ON MANGO_DB.alquiler (estado);
@@ -238,9 +240,11 @@ CREATE TABLE MANGO_DB.venta (
     comision NUMERIC(18,2),
     id_anuncio NUMERIC(18,0) NOT NULL,
     id_comprador NUMERIC(18,0) NOT NULL,
+	id_sucursal NUMERIC(18,0) NOT NULL,
     
     FOREIGN KEY (id_anuncio) REFERENCES MANGO_DB.anuncio(codigo),
-    FOREIGN KEY (id_comprador) REFERENCES MANGO_DB.comprador(id)
+    FOREIGN KEY (id_comprador) REFERENCES MANGO_DB.comprador(id),
+	FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.sucursal(codigo),
 );
 
 CREATE INDEX ix1_venta ON MANGO_DB.venta (id_anuncio, id_comprador);
@@ -293,7 +297,7 @@ FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_ESTADO IS NOT NULL
 
 -- MANGO_DB.ambientes
-INSERT INTO MANGO_DB.ambientes ()
+INSERT INTO MANGO_DB.ambientes
 SELECT DISTINCT m.INMUEBLE_CANT_AMBIENTES
 FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_CANT_AMBIENTES IS NOT NULL
@@ -458,11 +462,12 @@ WHERE m.INMUEBLE_CODIGO is not null
 
 -- MANGO_DB.alquiler
 INSERT INTO MANGO_DB.alquiler (codigo, fecha_inicio, fecha_fin, cant_periodos, deposito, comision, gastos_averigua,
-							   estado, id_anuncio, id_inquilino)
+							   estado, id_anuncio, id_inquilino, id_sucursal)
 SELECT DISTINCT m.ALQUILER_CODIGO, m.ALQUILER_FECHA_INICIO, m.ALQUILER_FECHA_FIN, m.ALQUILER_CANT_PERIODOS,
 	   m.ALQUILER_DEPOSITO, m.ALQUILER_COMISION, m.ALQUILER_GASTOS_AVERIGUA, m.ALQUILER_ESTADO
 	   ,(SELECT codigo FROM MANGO_DB.anuncio WHERE m.ANUNCIO_CODIGO = codigo)
-	   ,(SELECT id FROM MANGO_DB.inquilino WHERE m.INQUILINO_DNI = dni AND m.INQUILINO_TELEFONO = telefono)
+	   ,(SELECT id FROM MANGO_DB.inquilino WHERE m.INQUILINO_DNI = dni AND m.INQUILINO_TELEFONO = telefono), 
+	   m.SUCURSAL_CODIGO
 FROM gd_esquema.Maestra m
 WHERE m.ALQUILER_CODIGO IS NOT NULL
 
@@ -471,11 +476,11 @@ WHERE m.ALQUILER_CODIGO IS NOT NULL
 
 -- MANGO_DB.venta
 -- FALTA id_pago_venta
-INSERT INTO MANGO_DB.venta (codigo, fecha, precio_venta, moneda, comision, id_anuncio, id_comprador)
+INSERT INTO MANGO_DB.venta (codigo, fecha, precio_venta, moneda, comision, id_anuncio, id_comprador, id_sucursal)
 SELECT DISTINCT m.VENTA_CODIGO, m.VENTA_FECHA, m.VENTA_PRECIO_VENTA, m.VENTA_MONEDA, m.VENTA_COMISION,
 	   (SELECT codigo FROM MANGO_DB.anuncio WHERE m.ANUNCIO_CODIGO = codigo)
-	   ,(SELECT id FROM MANGO_DB.comprador WHERE m.COMPRADOR_DNI = dni AND m.COMPRADOR_TELEFONO = telefono)
-	   -- ,(SELECT pv.id FROM MANGO_DB.pago_venta pv WHERE m.PAGO_VENTA_MEDIO_PAGO = pv.) -- Para mi la venta no debería tener pago_venta, debería ser al revés (capaz me equivoco)
+	   ,(SELECT id FROM MANGO_DB.comprador WHERE m.COMPRADOR_DNI = dni AND m.COMPRADOR_TELEFONO = telefono),
+	   m.SUCURSAL_CODIGO
 FROM gd_esquema.Maestra m
 WHERE m.VENTA_CODIGO IS NOT NULL
 
