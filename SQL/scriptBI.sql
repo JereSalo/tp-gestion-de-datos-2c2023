@@ -143,10 +143,10 @@ CREATE TABLE MANGO_DB.BI_Hecho_Anuncio (
 	id_tipo_operacion NUMERIC(18,0),
 	id_tipo_moneda NUMERIC(18,0),
 	
-	sumatoria_precio NUMERIC(18,2),
-	sumatoria_duracion NUMERIC(18,0),
-	cantidad_operaciones_concretadas NUMERIC(18,0),
-	sumatoria_monto_por_cierre NUMERIC(18,2),
+	sumatoria_precio NUMERIC(18,2) NULL,
+	sumatoria_duracion NUMERIC(18,0) NULL,
+	cantidad_operaciones_concretadas NUMERIC(18,0) NULL,
+	sumatoria_monto_por_cierre NUMERIC(18,2) NULL,
 
 	FOREIGN KEY (id_ubicacion) REFERENCES MANGO_DB.BI_Ubicacion(id),
     FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id),
@@ -168,9 +168,9 @@ CREATE TABLE MANGO_DB.BI_Hecho_Venta(
 	id_sucursal NUMERIC(18,0),
 	id_rango_m2	NUMERIC(18,0),
 
-	sumatoria_m2_inmueble NUMERIC(18,2),
-	sumatoria_precio_venta NUMERIC(18,2),
-	sumatoria_comisiones NUMERIC(18,2),
+	sumatoria_m2_inmueble NUMERIC(18,2) NULL,
+	sumatoria_precio_venta NUMERIC(18,2) NULL,
+	sumatoria_comisiones NUMERIC(18,2) NULL,
 
 	FOREIGN KEY (id_tipo_inmueble) REFERENCES MANGO_DB.BI_Tipo_Inmueble(id),
     FOREIGN KEY (id_ubicacion) REFERENCES MANGO_DB.BI_Ubicacion(id),
@@ -184,8 +184,8 @@ CREATE TABLE MANGO_DB.BI_Hecho_Alquiler(
 	id_tiempo NUMERIC(18,0),
 	id_sucursal NUMERIC(18,0),
 
-	cantidad_dados_de_alta INT,
-	sumatoria_comisiones NUMERIC(18,2),
+	cantidad_dados_de_alta INT NULL,
+	sumatoria_comisiones NUMERIC(18,2) NULL,
 
 	FOREIGN KEY (id_rango_etario_inquilino) REFERENCES MANGO_DB.BI_Rango_etario(id),
 	FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id),
@@ -195,10 +195,10 @@ CREATE TABLE MANGO_DB.BI_Hecho_Alquiler(
 CREATE TABLE MANGO_DB.BI_Hecho_Pago_Alquiler(
 	id_tiempo NUMERIC(18,0),
 	
-	cantidad_pagos_totales NUMERIC(18,0),
-	cantidad_pagos_en_termino NUMERIC(18,0),
-	sumatoria_incrementos NUMERIC(18,2),
-	cantidad_alquileres_incrementados NUMERIC(18,0),
+	cantidad_pagos_totales NUMERIC(18,0) NULL,
+	cantidad_pagos_en_termino NUMERIC(18,0) NULL,
+	sumatoria_incrementos NUMERIC(18,2) NULL,
+	cantidad_alquileres_incrementados NUMERIC(18,0) NULL,
 
 	FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id)
 );
@@ -293,17 +293,17 @@ SELECT DISTINCT m.descripcion
 FROM MANGO_DB.moneda m
 
 
+-- HASTA ACA SE PUEDE EJECUTAR MULTIPLES VECES Y PARECE ANDAR TODO JOYA
+
 /* ------- CARGA DE LOS HECHOS ------- */
 
 -- BI_Hecho_Anuncio ACLARACION: CARGAR LA FECHA DE ALTA en id tiempo
 INSERT INTO MANGO_DB.BI_Hecho_Anuncio (id_tipo_operacion, id_ubicacion, id_ambientes, id_tiempo, id_tipo_inmueble, 
 									   id_rango_m2, id_tipo_moneda, id_rango_etario_agente, sumatoria_duracion, 
-									   sumatoria_precio, cantidad_operaciones_concretadas, sumatoria_monto_por_cierre)
+									   sumatoria_precio)
 SELECT tipoOp.id, u.id, amb.id, biti.id, tipoInmu.id, rangoM2.id, tipoMon.id, rangEtAg.id, -- Decía a.id y le puse amb.id, no se si ta bien lo q hice
-	   SUM(CAST(DATEDIFF(DAY, a.fecha_publicacion, a.fecha_finalizacion)) AS NUMERIC(18,0)), -- aca hay quilombo creo
-	   SUM(a.precio_publicado), 
-	   NULL, 
-	   NULL
+	   SUM(CAST(DATEDIFF(DAY, a.fecha_publicacion, a.fecha_finalizacion) AS NUMERIC(18,0))),
+	   SUM(a.precio_publicado)
 FROM MANGO_DB.anuncio a LEFT JOIN MANGO_DB.tipo_operacion tiO ON (a.id_tipo_operacion = tiO.id)
 						LEFT JOIN MANGO_DB.BI_Tipo_Operacion tipoOp ON (tipoOp.tipo = tiO.tipo)
 						LEFT JOIN MANGO_DB.inmueble i ON (a.id_inmueble = i.codigo)
