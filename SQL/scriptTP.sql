@@ -81,7 +81,8 @@ CREATE TABLE MANGO_DB.agente (
 	fecha_registro DATETIME,
 	telefono NUMERIC(18,0),
 	mail NVARCHAR(255),
-	fecha_nac DATETIME
+	fecha_nac DATETIME,
+	id_sucursal NUMERIC(18,0) NOT NULL,
 );
 
 CREATE TABLE MANGO_DB.estado_anuncio (
@@ -377,8 +378,8 @@ SELECT DISTINCT m.ANUNCIO_TIPO_OPERACION
 FROM gd_esquema.Maestra m
 
 -- MANGO_DB.agente
-INSERT INTO MANGO_DB.agente (nombre, apellido, dni, fecha_registro, telefono, mail, fecha_nac)
-SELECT DISTINCT m.AGENTE_NOMBRE, m.AGENTE_APELLIDO, m.AGENTE_DNI, m.AGENTE_FECHA_REGISTRO, m.AGENTE_TELEFONO, m.AGENTE_MAIL, m.AGENTE_FECHA_NAC
+INSERT INTO MANGO_DB.agente (nombre, apellido, dni, fecha_registro, telefono, mail, fecha_nac, id_sucursal)
+SELECT DISTINCT m.AGENTE_NOMBRE, m.AGENTE_APELLIDO, m.AGENTE_DNI, m.AGENTE_FECHA_REGISTRO, m.AGENTE_TELEFONO, m.AGENTE_MAIL, m.AGENTE_FECHA_NAC, m.SUCURSAL_CODIGO
 FROM gd_esquema.Maestra m
 
 -- MANGO_DB.estado_anuncio
@@ -522,12 +523,10 @@ FROM gd_esquema.Maestra m
 WHERE m.ALQUILER_CODIGO IS NOT NULL
 
 -- MANGO_DB.venta
--- FALTA id_pago_venta
 INSERT INTO MANGO_DB.venta (codigo, fecha, precio_venta, moneda, comision, id_anuncio, id_comprador)
 SELECT DISTINCT m.VENTA_CODIGO, m.VENTA_FECHA, m.VENTA_PRECIO_VENTA, m.VENTA_MONEDA, m.VENTA_COMISION,
 	   (SELECT codigo FROM MANGO_DB.anuncio WHERE m.ANUNCIO_CODIGO = codigo)
 	   ,(SELECT id FROM MANGO_DB.comprador WHERE m.COMPRADOR_DNI = dni AND m.COMPRADOR_TELEFONO = telefono)
-
 FROM gd_esquema.Maestra m
 WHERE m.VENTA_CODIGO IS NOT NULL
 
