@@ -81,10 +81,7 @@ CREATE TABLE MANGO_DB.agente (
 	fecha_registro DATETIME,
 	telefono NUMERIC(18,0),
 	mail NVARCHAR(255),
-	fecha_nac DATETIME,
-	id_sucursal NUMERIC(18,0) NOT NULL,
-
-	FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.sucursal(codigo)
+	fecha_nac DATETIME
 );
 
 CREATE TABLE MANGO_DB.estado_anuncio (
@@ -308,7 +305,11 @@ FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_ESTADO IS NOT NULL
 
 -- MANGO_DB.ambientes
+<<<<<<< HEAD:scriptTP.sql
+INSERT INTO MANGO_DB.ambientes
+=======
 INSERT INTO MANGO_DB.ambientes (detalle)
+>>>>>>> 9fb1c351a968f5c6ba7b0f144462972cf6f0b7d7:SQL/scriptTP.sql
 SELECT DISTINCT m.INMUEBLE_CANT_AMBIENTES
 FROM gd_esquema.Maestra m
 WHERE m.INMUEBLE_CANT_AMBIENTES IS NOT NULL
@@ -380,8 +381,8 @@ SELECT DISTINCT m.ANUNCIO_TIPO_OPERACION
 FROM gd_esquema.Maestra m
 
 -- MANGO_DB.agente
-INSERT INTO MANGO_DB.agente (nombre, apellido, dni, fecha_registro, telefono, mail, fecha_nac, id_sucursal)
-SELECT DISTINCT m.AGENTE_NOMBRE, m.AGENTE_APELLIDO, m.AGENTE_DNI, m.AGENTE_FECHA_REGISTRO, m.AGENTE_TELEFONO, m.AGENTE_MAIL, m.AGENTE_FECHA_NAC, m.SUCURSAL_CODIGO
+INSERT INTO MANGO_DB.agente (nombre, apellido, dni, fecha_registro, telefono, mail, fecha_nac)
+SELECT DISTINCT m.AGENTE_NOMBRE, m.AGENTE_APELLIDO, m.AGENTE_DNI, m.AGENTE_FECHA_REGISTRO, m.AGENTE_TELEFONO, m.AGENTE_MAIL, m.AGENTE_FECHA_NAC
 FROM gd_esquema.Maestra m
 
 -- MANGO_DB.estado_anuncio
@@ -525,10 +526,19 @@ FROM gd_esquema.Maestra m
 WHERE m.ALQUILER_CODIGO IS NOT NULL
 
 -- MANGO_DB.venta
+<<<<<<< HEAD:scriptTP.sql
+-- FALTA id_pago_venta
+INSERT INTO MANGO_DB.venta (codigo, fecha, precio_venta, moneda, comision, id_anuncio, id_comprador, id_sucursal)
+SELECT DISTINCT m.VENTA_CODIGO, m.VENTA_FECHA, m.VENTA_PRECIO_VENTA, m.VENTA_MONEDA, m.VENTA_COMISION,
+	   (SELECT codigo FROM MANGO_DB.anuncio WHERE m.ANUNCIO_CODIGO = codigo)
+	   ,(SELECT id FROM MANGO_DB.comprador WHERE m.COMPRADOR_DNI = dni AND m.COMPRADOR_TELEFONO = telefono),
+	   m.SUCURSAL_CODIGO
+=======
 INSERT INTO MANGO_DB.venta (codigo, fecha, precio_venta, moneda, comision, id_anuncio, id_comprador)
 SELECT DISTINCT m.VENTA_CODIGO, m.VENTA_FECHA, m.VENTA_PRECIO_VENTA, m.VENTA_MONEDA, m.VENTA_COMISION,
 	   (SELECT codigo FROM MANGO_DB.anuncio WHERE m.ANUNCIO_CODIGO = codigo)
 	   ,(SELECT id FROM MANGO_DB.comprador WHERE m.COMPRADOR_DNI = dni AND m.COMPRADOR_TELEFONO = telefono)
+>>>>>>> 9fb1c351a968f5c6ba7b0f144462972cf6f0b7d7:SQL/scriptTP.sql
 FROM gd_esquema.Maestra m
 WHERE m.VENTA_CODIGO IS NOT NULL
 
