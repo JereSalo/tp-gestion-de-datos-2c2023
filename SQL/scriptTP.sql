@@ -72,20 +72,6 @@ CREATE TABLE MANGO_DB.tipo_operacion (
 	tipo NVARCHAR(100)
 );
 
-CREATE TABLE MANGO_DB.agente (
-	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
-	nombre NVARCHAR(100),
-	apellido NVARCHAR(100),
-	dni NUMERIC(18,0),
-	fecha_registro DATETIME,
-	telefono NUMERIC(18,0),
-	mail NVARCHAR(255),
-	fecha_nac DATETIME,
-	id_sucursal NUMERIC(18,0)
-
-	FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.sucursal(codigo)
-);
-
 CREATE TABLE MANGO_DB.estado_anuncio (
 	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
 	estado NVARCHAR(100)
@@ -125,6 +111,20 @@ CREATE TABLE MANGO_DB.sucursal (
     id_localidad NUMERIC(18,0) NOT NULL,
     
     FOREIGN KEY (id_localidad) REFERENCES MANGO_DB.localidad(id)
+);
+
+CREATE TABLE MANGO_DB.agente (
+	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
+	nombre NVARCHAR(100),
+	apellido NVARCHAR(100),
+	dni NUMERIC(18,0),
+	fecha_registro DATETIME,
+	telefono NUMERIC(18,0),
+	mail NVARCHAR(255),
+	fecha_nac DATETIME,
+	id_sucursal NUMERIC(18,0)
+
+	FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.sucursal(codigo)
 );
 
 CREATE TABLE MANGO_DB.detalle_alq (
@@ -380,11 +380,6 @@ INSERT INTO MANGO_DB.tipo_operacion (tipo)
 SELECT DISTINCT m.ANUNCIO_TIPO_OPERACION
 FROM gd_esquema.Maestra m
 
--- MANGO_DB.agente
-INSERT INTO MANGO_DB.agente (nombre, apellido, dni, fecha_registro, telefono, mail, fecha_nac, id_sucursal)
-SELECT DISTINCT m.AGENTE_NOMBRE, m.AGENTE_APELLIDO, m.AGENTE_DNI, m.AGENTE_FECHA_REGISTRO, m.AGENTE_TELEFONO, m.AGENTE_MAIL, m.AGENTE_FECHA_NAC, m.SUCURSAL_CODIGO
-FROM gd_esquema.Maestra m
-
 -- MANGO_DB.estado_anuncio
 INSERT INTO MANGO_DB.estado_anuncio (estado)
 SELECT DISTINCT m.ANUNCIO_ESTADO
@@ -420,6 +415,12 @@ SELECT DISTINCT m.SUCURSAL_CODIGO, m.SUCURSAL_NOMBRE, m.SUCURSAL_DIRECCION, m.SU
 , (SELECT id FROM MANGO_DB.localidad l WHERE m.SUCURSAL_LOCALIDAD = l.nombre AND m.SUCURSAL_PROVINCIA = (SELECT nombre FROM MANGO_DB.provincia p WHERE p.id = l.id_provincia)) as id_localidad
 FROM gd_esquema.Maestra m
 SET IDENTITY_INSERT MANGO_DB.sucursal OFF;
+
+-- MANGO_DB.agente
+INSERT INTO MANGO_DB.agente (nombre, apellido, dni, fecha_registro, telefono, mail, fecha_nac, id_sucursal)
+SELECT DISTINCT m.AGENTE_NOMBRE, m.AGENTE_APELLIDO, m.AGENTE_DNI, m.AGENTE_FECHA_REGISTRO, m.AGENTE_TELEFONO, m.AGENTE_MAIL, m.AGENTE_FECHA_NAC, m.SUCURSAL_CODIGO
+FROM gd_esquema.Maestra m
+WHERE m.SUCURSAL_CODIGO is not null
 
 -- MANGO_DB.detalle_alq
 INSERT INTO MANGO_DB.detalle_alq (cod_alquiler, nro_periodo_fin, precio, nro_periodo_in)

@@ -87,8 +87,7 @@ CREATE TABLE MANGO_DB.BI_Ubicacion(
 );
 
 CREATE TABLE MANGO_DB.BI_Sucursal(
-	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
-	codigo NUMERIC(18,0),
+	codigo NUMERIC(18,0) PRIMARY KEY,
     nombre NVARCHAR(100)
 );
 
@@ -122,11 +121,6 @@ CREATE TABLE MANGO_DB.BI_Tipo_Moneda (
 	descripcion NVARCHAR(100)
 );
 
-CREATE TABLE MANGO_DB.BI_Alquiler (
-	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
-)
-
-
 /* ------- CREACION DE LOS HECHOS ------- */
 
 -- POR AHORA PLANTEAMOS CREAR 3 HECHOS, DE ANUNCIOS, DE VENTAS (CON PAGO DE VENTAS) 
@@ -151,7 +145,7 @@ CREATE TABLE MANGO_DB.BI_Hecho_Anuncio (
 
 	FOREIGN KEY (id_ubicacion) REFERENCES MANGO_DB.BI_Ubicacion(id),
     FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id),
-    FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.BI_Sucursal(id),
+    FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.BI_Sucursal(codigo),
     FOREIGN KEY (id_rango_etario_agente) REFERENCES MANGO_DB.BI_Rango_etario(id),
     FOREIGN KEY (id_tipo_inmueble) REFERENCES MANGO_DB.BI_Tipo_Inmueble(id),
     FOREIGN KEY (id_ambientes) REFERENCES MANGO_DB.BI_Ambientes(id),
@@ -177,8 +171,8 @@ CREATE TABLE MANGO_DB.BI_Hecho_Venta(
 	FOREIGN KEY (id_tipo_inmueble) REFERENCES MANGO_DB.BI_Tipo_Inmueble(id),
     FOREIGN KEY (id_ubicacion) REFERENCES MANGO_DB.BI_Ubicacion(id),
 	FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id),
-	FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.BI_Sucursal(id),
-    FOREIGN KEY (id_rango_m2) REFERENCES MANGO_DB.BI_Rango_m2(id)
+	FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.BI_Sucursal(codigo),
+    FOREIGN KEY (id_rango_m2) REFERENCES MANGO_DB.BI_Rango_m2(id),
 
 	PRIMARY KEY (id_tipo_inmueble, id_ubicacion, id_tiempo, id_sucursal, id_rango_m2)
 );
@@ -193,7 +187,7 @@ CREATE TABLE MANGO_DB.BI_Hecho_Alquiler(
 
 	FOREIGN KEY (id_rango_etario_inquilino) REFERENCES MANGO_DB.BI_Rango_etario(id),
 	FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id),
-	FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.BI_Tiempo(id)
+	FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.BI_Tiempo(id),
 
 	PRIMARY KEY (id_rango_etario_inquilino, id_tiempo, id_sucursal)
 );
@@ -328,11 +322,10 @@ FROM MANGO_DB.anuncio a LEFT JOIN MANGO_DB.tipo_operacion tiO ON (a.id_tipo_oper
 						LEFT JOIN MANGO_DB.BI_Tipo_Moneda tipoMon ON (tipoMon.descripcion = mon.descripcion)
 						LEFT JOIN MANGO_DB.agente agente ON (agente.id = a.id_agente)
 						LEFT JOIN MANGO_DB.BI_Rango_etario rangEtAg ON (rangEtAg.rango = MANGO_DB.getRangoEtario(agente.fecha_nac))
-						LEFT JOIN MANGO_DB.agente agent ON (a.id_agente = agent.id)
-						LEFT JOIN MANGO_DB.sucursal s ON (s.codigo = agent.id_sucursal)
+						LEFT JOIN MANGO_DB.sucursal s ON (s.codigo = agente.id_sucursal)
 						LEFT JOIN MANGO_DB.BI_Sucursal bis ON (bis.codigo = s.codigo)
 
-GROUP BY a.id_tipo_operacion, u.id, amb.id, biti.id, tipoInmu.id, rangoM2.id, tipoMon.id, rangEtAg.id;
+GROUP BY a.id_tipo_operacion, u.id, amb.id, biti.id, tipoInmu.id, rangoM2.id, tipoMon.id, rangEtAg.id, bis.codigo;
 
 UPDATE MANGO_DB.BI_Hecho_Anuncio
 SET cantidad_operaciones_concretadas = (SELECT COUNT(a.fecha_finalizacion)
@@ -387,10 +380,10 @@ INSERT INTO MANGO_DB.BI_Hecho_Pago_Alquiler(id_tiempo, total_porcentaje_aumentos
 SELECT biti.id, SUM((pag_al.importe - pag_al_ant.importe)/pag_al_ant.importe*100) AS total_porcentaje_aumentos,
 		COUNT(*) AS cantidad_porcentajes_aumentos,
 		COUNT(pag_al_ant.id) AS cantidad_porcentajes_aumentos,
-		SUM(CASE WHEN (pag_al.fecha_pago >= pag_al.fecha_vencimiento) then 1 else 0) AS cantidad_pagos_incumplidos
+		SUM(CASE WHEN (pag_al.fecha_pago >= pag_al.fecha_vencimiento) then 1 else 0 END) AS cantidad_pagos_incumplidos
 FROM MANGO_DB.pago_alquiler pag_al JOIN MANGO_DB.BI_Tiempo biti ON (biti.anio = YEAR(pag_al.fec_ini) AND
 														biti.mes = MONTH(pag_al.fec_ini) AND
-														biti.cuatrimestre = MANGO_DB.getCuatrimestre(pag_al.fec_ini)),
+														biti.cuatrimestre = MANGO_DB.getCuatrimestre(pag_al.fec_ini))
 								   JOIN MANGO_DB.alquiler ea ON pag_al.id_alquiler = ea.id
 								   LEFT JOIN MANGO_DB.pago_alquiler pag_al_ant ON pag_al_ant.id_alquiler = pag_al.id_alquiler AND
 								   												  YEAR(pag_al_ant.fecha_pago) = YEAR(pag_al.fecha_pago) AND
@@ -404,6 +397,7 @@ GROUP BY biti.id
 
 -- VISTA 1
 -- TODO ACOMODAR LOS NOMBRES
+GO
 CREATE VIEW MANGO_DB.duracion_promedio_anuncios AS
 SELECT 
 	bi_ha.sumatoria_duracion / COUNT(*) AS 'Duracion promedio',
@@ -413,33 +407,37 @@ SELECT
 	bi_tiempo.anio,
 	bi_amb.detalle AS 'Ambientes'
 FROM BI_Hecho_Anuncio bi_ha
-	LEFT JOIN MANGO_DB.BI_Tipo_Operacion bi_to ON bi_to.id = bi_ha.id_tipo_operacion,
-	LEFT JOIN MANGO_DB.BI_Ubicacion bi_ubi ON bi_ubi.id = bi_ha.id_ubicacion,
-	LEFT JOIN MANGO_DB.BI_Tiempo bi_t ON bi_t.id = bi_ha.id_tiempo,
+	LEFT JOIN MANGO_DB.BI_Tipo_Operacion bi_to ON bi_to.id = bi_ha.id_tipo_operacion
+	LEFT JOIN MANGO_DB.BI_Ubicacion bi_ubi ON bi_ubi.id = bi_ha.id_ubicacion
+	LEFT JOIN MANGO_DB.BI_Tiempo bi_t ON bi_t.id = bi_ha.id_tiempo
 	LEFT JOIN MANGO_DB.BI_Ambientes bi_amb ON bi_amb.id = bi_ha.id_ambientes
 GROUP BY bi_to.tipo, bi_ubi.barrio, bi_tiempo.cuatrimestre, bi_tiempo.anio, bi_tiempo_cuatrimestre, bi_amb.detalle
 ORDER BY bi_to.tipo, bi_ubi.barrio, bi_tiempo.cuatrimestre, bi_tiempo.anio, bi_tiempo_cuatrimestre
+GO
 
 -- VISTA 2
 -- TODO ACOMODAR LOS NOMBRES
+GO
 CREATE VIEW MANGO_DB.precio_promedio_anuncios AS
 SELECT 
 	sumatoria_precio / COUNT(*) AS 'Precio promedio',
 	bi_to.tipo AS 'Tipo operacion',
-	bi_ti.tipo AS 'Tipo inmueble'
-	bi_rango.rango AS 'Rango M2'
+	bi_ti.tipo AS 'Tipo inmueble',
+	bi_rango.rango AS 'Rango M2',
 	bi_tiempo.cuatrimestre,
-	bi_tiempo.anio,
+	bi_tiempo.anio
 FROM BI_Hecho_Anuncio bi_ha
-	LEFT JOIN MANGO_DB.BI_Tipo_Operacion bi_to ON bi_to.id = bi_ha.id_tipo_operacion,
-	LEFT JOIN MANGO_DB.BI_Tipo_Inmueble bi_ti ON bi_ti.id = bi_ha.id_tipo_inmueble,
-	LEFT JOIN MANGO_DB.BI_Tiempo bi_time ON bi_time.id = bi_ha.id_tiempo,
+	LEFT JOIN MANGO_DB.BI_Tipo_Operacion bi_to ON bi_to.id = bi_ha.id_tipo_operacion
+	LEFT JOIN MANGO_DB.BI_Tipo_Inmueble bi_ti ON bi_ti.id = bi_ha.id_tipo_inmueble
+	LEFT JOIN MANGO_DB.BI_Tiempo bi_time ON bi_time.id = bi_ha.id_tiempo
 	LEFT JOIN MANGO_DB.BI_Rango_m2 bi_rango ON bi_rango.id = bi_ha.id_rango_m2
 GROUP BY sumatoria_precio, COUNT(*), bi_to.tipo, bi_ti.tipo, bi_rango.rango, bi_tiempo.cuatrimestre, bi_tiempo.anio
 ORDER BY bi_to.tipo, bi_ubi.barrio, bi_ha.id_tipo_inmueble, bi_tiempo.cuatrimestre, bi_tiempo.anio, bi_tiempo_cuatrimestre
+GO
 
 -- VISTA 3
 -- TODO ACOMODAR LOS NOMBRES-- PROBAR PORQUE NO SE SI FUNCIONA COMO CREO!!
+GO
 CREATE VIEW MANGO_DB.barrios_mas_elegidos_alquiler AS
 SELECT TOP 5
 	bi_ubi.barrio AS 'Barrio',
@@ -447,47 +445,55 @@ SELECT TOP 5
 	bi_ti.cuatrimestre AS 'Cuatrimestre',
 	bi_ti.anio AS 'Anio'
 FROM BI_Hecho_Alquiler bi_ha
-	LEFT JOIN BI_Ubicacion bi_ubi ON bi_ubi.id = bi_ha.id_ubicacion,
-	LEFT JOIN MANGO_DB.BI_Rango_Etario bi_re ON bi_re.id = bi_ha.id_rango_etario,
+	LEFT JOIN BI_Ubicacion bi_ubi ON bi_ubi.id = bi_ha.id_ubicacion
+	LEFT JOIN MANGO_DB.BI_Rango_Etario bi_re ON bi_re.id = bi_ha.id_rango_etario
 	LEFT JOIN MANGO_DB.BI_Tiempo bi_ti ON bi_ti.id = bi_ha.id_tiempo
 GROUP BY biMANGO_DB._ubi.barrio, bi_re.rango, bi_ti.cuatrimestre, bi_ti.cuatrimestre, bi_ti.anio
 ORDER BY bi_ha.cantidad_alquileres_concretados
+GO
 
 -- VISTA 4
 -- TODO ACOMODAR LOS NOMBRES
+GO
 CREATE VIEW MANGO_DB.porcentaje_incumplimiento_pagos_alquileres AS
 SELECT 
 	((bi_hpa.cantidad_pagos_totales - bi_hpa.cantidad_pagos_en_termino) * 100) / bi_hpa.cantidad_pagos_totales AS 'Porcentaje incumplimiento',
 	bi_tie.cuatrimestre AS 'Cuatrimestre',
 	bi_tie.anio AS 'Anio'
 FROM BI_Hecho_Pago_Alquiler bi_hpa
-	LEFT JOIN BI_Tiempo bi_tie ON bi_tie.id ON bi_hpa.idTiempo
+	LEFT JOIN BI_Tiempo bi_tie ON bi_tie.id = bi_hpa.idTiempo
+GO
 
 -- VISTA 5
+GO
 CREATE VIEW MANGO_DB.porcentaje_promedio_incremento_valor_alquileres AS
 SELECT t.mes, t.anio, sum(bi_pag_al.total_porcentaje_aumentos) / sum(bi_pag_al.cantidad_porcentajes_aumentos) AS porcentaje_prom_incremento, sum(bi_pag_al.total_porcentaje_aumentos) AS total_porcentaje_aumentos, sum(bi_pag_al.cantidad_porcentajes_aumentos) AS cantidad_porcentajes_aumentos
 FROM MANGO_DB.BI_Hecho_Pago_Alquiler bi_pag_al
     JOIN MANGO_DB.BI_Tiempo t ON bi_pag_al.id_tiempo = t.id
 WHERE bi_pag_al.cantPorcentajesAumento != 0
 GROUP BY t.mes, t.anio
+GO
 
 -- VISTA 6
 -- TODO ACOMODAR LOS NOMBRES
+GO
 CREATE VIEW MANGO_DB.precio_promedio_m2 AS
 SELECT
-	bi_hv.sumatoriaMetrosCuadradosInmueble / bi_hv.cantidadInmueblesPorM2 AS 'Promedio'
+	bi_hv.sumatoriaMetrosCuadradosInmueble / bi_hv.cantidadInmueblesPorM2 AS 'Promedio',
 	bi_ti.tipo AS 'Tipo de inmueble',
 	bi_tie.cuatrimestre AS 'Cuatrimestre',
 	bi_tie.anio AS 'Anio'
 FROM MANGO_DB.BI_Hecho_Venta bi_hv
-	LEFT JOIN MANGO_DB.BI_Rango_m2 bi_rango ON bi_rango.id = bi_hv.idRangom2,
-	LEFT JOIN MANGO_DB.BI_Tipo_Inmueble bi_ti ON bi_ti.id = bi_hv.idTipoInmueble,
+	LEFT JOIN MANGO_DB.BI_Rango_m2 bi_rango ON bi_rango.id = bi_hv.idRangom2
+	LEFT JOIN MANGO_DB.BI_Tipo_Inmueble bi_ti ON bi_ti.id = bi_hv.idTipoInmueble
 	LEFT JOIN MANGO_DB.BI_Tiempo bi_tie ON bi_tie.id = bi_hv.idTiempo
 GROUP BY bi_ti.tipo ,bi_tie.cuatrimestre, bi_tie.anio
+GO
 
 -- VISTA 7
 -- TODO ACOMODAR LOS NOMBRES
 -- SI NO FUNCIONA, CAMBIAR LOS NOMBRES DE LAS COLUMNAS EN COMUN Y NO HACERLAS STRING SINO NOMBRE DIRECTO
+GO
 CREATE VIEW MANGO_DB.comision_promedio AS
 SELECT 'Comision promedio', 'Tipo operacion', 'Sucursal', 'Cuatrimestre', 'Anio'
 FROM (
@@ -496,9 +502,9 @@ FROM (
 		'Alquiler' AS 'Tipo operacion',
 		bi_s.nombre AS 'Sucursal',
 		bi_tie.cuatrimestre AS 'Cuatrimestre',
-		bi_tie.anio AS 'Anio',
+		bi_tie.anio AS 'Anio'
 	FROM BI_Hecho_Alquiler bi_ha
-		LEFT JOIN BI_Sucursal bi_s ON bi_s.id = bi_ha.id_sucursal,
+		LEFT JOIN BI_Sucursal bi_s ON bi_s.id = bi_ha.id_sucursal
 		LEFT JOIN BI_Tiempo bi_tie ON bi_tie.id = bi_ha.id_tiempo
 	GROUP BY bi_ha.sumatoria_comisiones, bi_ha.cantidad_alquileres_concretados, bi_s.nombre, bi_tie.cuatrimestre, bi_tie.anio
 	) AS Tabla_alquileres
@@ -510,15 +516,16 @@ FROM (
 		'Venta' AS 'Tipo operacion',
 		bi_s.nombre AS 'Sucursal',
 		bi_tie.cuatrimestre AS 'Cuatrimestre',
-		bi_tie.anio AS 'Anio',
+		bi_tie.anio AS 'Anio'
 	FROM BI_Hecho_Venta bi_hv
-		LEFT JOIN BI_Sucursal bi_s ON bi_s.id = bi_hv.id_sucursal,
+		LEFT JOIN BI_Sucursal bi_s ON bi_s.id = bi_hv.id_sucursal
 		LEFT JOIN BI_Tiempo bi_tie ON bi_tie.id = bi_hv.id_tiempo
 	GROUP BY bi_ha.sumatoria_comisiones, bi_ha.cantidad_ventas_concretadas, bi_s.nombre, bi_tie.cuatrimestre, bi_tie.anio
 	) AS Tabla_ventas
-
+GO
 
 -- VISTA 8
+GO
 CREATE VIEW MANGO_DB.porcentaje_operaciones_concretadas AS
 SELECT 
 	(bi_hanc.cantidad_operaciones_concretadas * 100) / bi_hanc.cantidad_anuncios_totales AS 'Porcentaje', 
@@ -527,30 +534,31 @@ SELECT
 	bi_rangoE.rango AS 'Rango etario', 
 	bi_tie.anio AS 'Anio'
 FROM BI_Hecho_Anuncio bi_hanc
-	LEFT JOIN BI_Tipo_Operacion bi_to ON bi_to.id = bi_hanc.id_tipo_operacion,
-	LEFT JOIN BI_Sucursal bi_s ON bi_s.id = bi_hanc.id_sucursal,
-	LEFT JOIN BI_Rango_etario bi_rangoE ON bi_rangoE.id = bi_hanc.id_rango_etario_agente,
+	LEFT JOIN BI_Tipo_Operacion bi_to ON bi_to.id = bi_hanc.id_tipo_operacion
+	LEFT JOIN BI_Sucursal bi_s ON bi_s.id = bi_hanc.id_sucursal
+	LEFT JOIN BI_Rango_etario bi_rangoE ON bi_rangoE.id = bi_hanc.id_rango_etario_agente
 	LEFT JOIN BI_Tiempo bi_tie ON bi_tie.id = bi_hanc.id_tiempo
 GROUP BY bi_tie.anio, bi_rangoE.rango, bi_s.nombre, bi_to.tipo, bi_hanc.cantidad_anuncios_totales
-
+GO
 -- Agregar cantidad_anuncios_totales y id_sucursal EN BI_Hecho_Anuncio
 
 -- VISTA 9
 -- TODO ACOMODAR LOS NOMBRES
+GO
 CREATE VIEW MANGO_DB.monto_total_de_cierre AS
 SELECT 
-	bi_hanc.sumatoria_monto_por_cierre AS 'Monto total'
+	bi_hanc.sumatoria_monto_por_cierre AS 'Monto total',
 	bi_to.tipo AS 'Tipo operacion',
 	bi_tie.cuatrimestre AS 'Cuatrimestre',
 	bi_suc.nombre AS 'Sucursal',
 	bi_moneda.descripcion AS 'Tipo de moneda'
 FROM BI_Hecho_Anuncio bi_hanc
-	LEFT JOIN BI_Tipo_Operacion bi_to ON bi_to.id = bi_hanc.id_tipo_operacion,
-	LEFT JOIN BI_tiempo bi_tie ON bi_tie.id = bi_hanc.id_tiempo,
-	LEFT JOIN BI_Sucursal bi_suc ON bi_suc.id = bi_hanc.id_sucursal,
+	LEFT JOIN BI_Tipo_Operacion bi_to ON bi_to.id = bi_hanc.id_tipo_operacion
+	LEFT JOIN BI_tiempo bi_tie ON bi_tie.id = bi_hanc.id_tiempo
+	LEFT JOIN BI_Sucursal bi_suc ON bi_suc.id = bi_hanc.id_sucursal
 	LEFT JOIN BI_Tipo_Moneda bi_moneda ON bi_moneda.id = bi_hanc.id_tipo_moneda
 GROUP BY bi_hanc.sumatoria_monto_por_cierre, bi_to.tipo, bi_tie.cuatrimestre, bi_suc.nombre, bi_moneda.descripcion
-
+GO
 
 -- Borrado de las funciones: Solo para poder volver a ejecutar el mismo .sql sin tocar nada
 
