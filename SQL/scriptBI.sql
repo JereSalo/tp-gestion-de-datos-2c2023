@@ -5,6 +5,10 @@ Script Bussiness Inteligence
 USE GD2C2023
 GO
 
+/* ------- DROPEO DE LAS FUNCIONES SI EXISTEN ------- */
+EXEC MANGO_DB.BorrarFuncionesBI;
+GO
+
 /* ------- CREACION DE LAS FUNCIONES ------- */
 CREATE FUNCTION MANGO_DB.getCuatrimestre (@fecha DATE)
 RETURNS SMALLINT
@@ -61,6 +65,11 @@ BEGIN
 	RETURN @rango
 END
 GO
+
+/* ------- DROPEO DE HECHOS Y DIMENSIONES SI EXISTEN ------- */
+
+EXEC MANGO_DB.BorrarTablasBI; -- Esto después lo sacamos, es para que podamos ejecutarlo varias veces sin problemas...
+
 
 /* ------- CREACION DE LAS DIMENSIONES ------- */
 CREATE TABLE MANGO_DB.BI_Tiempo (
