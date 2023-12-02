@@ -1,8 +1,10 @@
 USE GD2C2023;
 GO
 
-IF OBJECT_ID('MANGO_DB.BorrarTablas', 'P') IS NOT NULL
-BEGIN DROP PROCEDURE MANGO_DB.BorrarTablas; END;
+-- SELECT * FROM sys.procedures -- Esto para ver los procedures existentes
+
+IF OBJECT_ID('MANGO_DB.BorrarTablasTransaccional', 'P') IS NOT NULL
+BEGIN DROP PROCEDURE MANGO_DB.BorrarTablasTransaccional; END;
 GO
 
 IF OBJECT_ID('MANGO_DB.BorrarTablasBI', 'P') IS NOT NULL
@@ -13,8 +15,31 @@ IF OBJECT_ID('MANGO_DB.BorrarFuncionesBI', 'P') IS NOT NULL
 BEGIN DROP PROCEDURE MANGO_DB.BorrarFuncionesBI; END;
 GO
 
+IF OBJECT_ID('MANGO_DB.BorrarFuncionesTransaccional', 'P') IS NOT NULL
+BEGIN DROP PROCEDURE MANGO_DB.BorrarFuncionesTransaccional; END;
+GO
 
-CREATE PROCEDURE MANGO_DB.BorrarTablas
+IF OBJECT_ID('MANGO_DB.ResetearTransaccional', 'P') IS NOT NULL
+BEGIN DROP PROCEDURE MANGO_DB.ResetearTransaccional; END;
+GO
+
+IF OBJECT_ID('MANGO_DB.ResetearBI', 'P') IS NOT NULL
+BEGIN DROP PROCEDURE MANGO_DB.ResetearBI; END;
+GO
+
+
+CREATE PROCEDURE MANGO_DB.BorrarFuncionesTransaccional
+AS
+BEGIN
+	-- Primero voy a borrar la función que usamos en transaccional, después las tablas
+
+	IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_NAME = 'caracteristicas' AND ROUTINE_SCHEMA = 'MANGO_DB' AND ROUTINE_TYPE = 'FUNCTION')
+    BEGIN DROP FUNCTION MANGO_DB.caracteristicas; END;
+END
+GO
+
+
+CREATE PROCEDURE MANGO_DB.BorrarTablasTransaccional
 AS
 BEGIN
     -- Dropeo todas las FK constraints así puedo borrar las tablas después
@@ -101,9 +126,20 @@ BEGIN
 	CLOSE table_cursor;
 	DEALLOCATE table_cursor;
 END
-
-PRINT 'Se borraron todas las tablas del schema ' + @schemaName;
 END;
+GO
+
+
+CREATE PROCEDURE MANGO_DB.ResetearTransaccional
+AS
+BEGIN
+
+EXEC MANGO_DB.BorrarTablasTransaccional;
+EXEC MANGO_DB.BorrarFuncionesTransaccional;
+
+PRINT 'Se reseteó modelo transaccional del esquema MANGO_DB ';
+
+END
 GO
 
 CREATE PROCEDURE MANGO_DB.BorrarTablasBI
@@ -167,5 +203,16 @@ BEGIN
 	
 	IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_NAME = 'getRangoEtario' AND ROUTINE_SCHEMA = 'MANGO_DB' AND ROUTINE_TYPE = 'FUNCTION')
 	BEGIN DROP FUNCTION MANGO_DB.getRangoEtario; END;
+END
+GO
+
+
+CREATE PROCEDURE MANGO_DB.ResetearBI
+AS
+BEGIN
+	EXEC MANGO_DB.BorrarTablasBI;
+	EXEC MANGO_DB.BorrarFuncionesBI;
+
+	PRINT 'Se reseteó modelo BI del esquema MANGO_DB ';
 END
 GO
