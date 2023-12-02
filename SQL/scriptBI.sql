@@ -156,11 +156,12 @@ CREATE TABLE MANGO_DB.BI_Hecho_Venta(
 	id_tiempo NUMERIC(18,0),
 	id_sucursal NUMERIC(18,0),
 	id_rango_m2	NUMERIC(18,0),
+	id_tipo_moneda NUMERIC(18,0),
 
 	sumatoria_m2_inmueble NUMERIC(18,2) NULL,
 	sumatoria_precio_venta NUMERIC(18,2) NULL,
 	sumatoria_comisiones NUMERIC(18,2) NULL,
-	cantidad_ventas_concretadas NUMERIC(18,2) NULL
+	cantidad_ventas_concretadas NUMERIC(18,0) NULL
 
 	FOREIGN KEY (id_tipo_inmueble) REFERENCES MANGO_DB.BI_Tipo_Inmueble(id),
     FOREIGN KEY (id_ubicacion) REFERENCES MANGO_DB.BI_Ubicacion(id),
@@ -321,24 +322,31 @@ FROM MANGO_DB.anuncio a JOIN MANGO_DB.tipo_operacion tiO ON (a.id_tipo_operacion
 GROUP BY a.id_tipo_operacion, u.id, amb.id, biti.id, tipoInmu.id, rangoM2.id, tipoMon.id, rangEtAg.id, bis.codigo;
 
 -- BI_Hecho_Venta
--- CHEQUEAR cantidad_ventas_concretadas SI ES COUNT(*)
-INSERT INTO MANGO_DB.BI_Hecho_Venta (id_tipo_inmueble, id_ubicacion, id_tiempo, id_sucursal, id_rango_m2,
+INSERT INTO MANGO_DB.BI_Hecho_Venta (id_tipo_inmueble, id_ubicacion, id_tiempo, id_sucursal, id_rango_m2, id_tipo_moneda,
 									 sumatoria_m2_inmueble, sumatoria_precio_venta, sumatoria_comisiones,
 									 cantidad_ventas_concretadas)
-SELECT DISTINCT bti.id, biubi.id, biti.id, bis.codigo, birg.id, SUM(inm.superficie_total), 
-		SUM(v.precio_venta), SUM(v.comision), COUNT(*)
+SELECT DISTINCT bti.id 'id_tipo_inmueble', biubi.id 'id_ubicacion', biti.id 'id_tiempo', bis.codigo 'id_sucursal', birg.id 'id_rango_m2', bimon.id 'id_moneda', SUM(inm.superficie_total) 'sumatoria_m2_inmueble', 
+		SUM(v.precio_venta) 'sumatoria_precio_venta', SUM(v.comision) 'sumatoria_comisiones', COUNT(*) 'cantidad_ventas_concretadas'
 FROM MANGO_DB.venta v LEFT JOIN MANGO_DB.anuncio a ON (v.id_anuncio = a.codigo)
+						LEFT JOIN MANGO_DB.agente ag ON (ag.id = a.id_agente)
 						LEFT JOIN MANGO_DB.inmueble inm ON (a.id_inmueble = inm.codigo)
 						LEFT JOIN MANGO_DB.tipo_Inmueble ti ON (inm.id_tipo_inmueble = ti.id)
 						LEFT JOIN MANGO_DB.BI_Tipo_Inmueble bti ON (bti.tipo = ti.tipo)
-						LEFT JOIN MANGO_DB.localidad l ON (l.id = inm.id_localidad)
-						LEFT JOIN MANGO_DB.BI_Ubicacion biubi ON (biubi.localidad = l.nombre)
+						JOIN MANGO_DB.barrio bar ON (bar.id = inm.id_barrio)
+						JOIN MANGO_DB.localidad loc ON (loc.id = inm.id_localidad)
+						JOIN MANGO_DB.provincia prov ON (prov.id = loc.id_provincia) -- creo q el de provincia ta demás pero no nos caga así que lo dejo
+						LEFT JOIN MANGO_DB.BI_Ubicacion biubi ON (biubi.barrio = bar.nombre AND biubi.localidad = loc.nombre AND biubi.provincia = prov.nombre)
 						LEFT JOIN MANGO_DB.BI_tiempo biti ON (biti.anio = YEAR(v.fecha) AND	biti.mes = MONTH(v.fecha) AND biti.cuatrimestre = MANGO_DB.getCuatrimestre(v.fecha))
-						LEFT JOIN MANGO_DB.sucursal suc ON (suc.id_localidad = l.id)
+						LEFT JOIN MANGO_DB.sucursal suc ON (suc.codigo = ag.id_sucursal)
 						LEFT JOIN MANGO_DB.BI_Sucursal bis ON (bis.codigo = suc.codigo)
 						LEFT JOIN MANGO_DB.BI_Rango_m2 birg ON (birg.rango = MANGO_DB.getRangoM2(inm.superficie_total))
-WHERE bis.codigo IS NOT NULL
-GROUP BY bti.id, biubi.id, biti.id, bis.codigo, inm.superficie_total, birg.id
+						LEFT JOIN MANGO_DB.moneda mon ON (mon.descripcion = v.moneda)
+						LEFT JOIN MANGO_DB.BI_Tipo_Moneda bimon ON (bimon.id = mon.id)
+GROUP BY bti.id, biubi.id, biti.id, bis.codigo, birg.id, bimon.id
+
+
+-- Una venta puede tener más de un pago_venta, está mal graficada la relación en el DER
+SELECT cod_venta FROM MANGO_DB.pago_venta
 
 
 -- BI_Hecho_Alquiler 
@@ -380,7 +388,7 @@ GROUP BY biti.id
 SELECT * FROM MANGO_DB.BI_Hecho_Alquiler -- Tiene todo
 SELECT * FROM MANGO_DB.BI_Hecho_Anuncio -- Falta sumatoria_monto_por_cierre, pero no se ni que significa así que por eso no lo hago
 SELECT * FROM MANGO_DB.BI_Hecho_Pago_Alquiler -- Falta total_porcentaje_aumentos, y cantidad_porcentajes_aumentos está en 0
-SELECT * FROM MANGO_DB.BI_Hecho_Venta -- Literalmente está vacía
+SELECT * FROM MANGO_DB.BI_Hecho_Venta -- Cuando hacés un select casí que todas las ventas difieren en algún aspecto, hay muy pocas que coinciden con las PKs. Aún así creo que está bien porque respetamos la consigna, será problema de los datos eso !
 
 
 /* ------- CREACION DE LAS VISTAS EN FUNCION DE LAS DIMENSIONES ------- */
