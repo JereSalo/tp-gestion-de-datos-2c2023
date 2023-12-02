@@ -181,7 +181,7 @@ CREATE TABLE MANGO_DB.BI_Hecho_Alquiler(
 
 	FOREIGN KEY (id_rango_etario_inquilino) REFERENCES MANGO_DB.BI_Rango_etario(id),
 	FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id),
-	FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.BI_Tiempo(id),
+	FOREIGN KEY (id_sucursal) REFERENCES MANGO_DB.BI_sucursal(codigo),
 
 	PRIMARY KEY (id_rango_etario_inquilino, id_tiempo, id_sucursal)
 );
@@ -344,7 +344,7 @@ GROUP BY bti.id, biubi.id, biti.id, bis.codigo, inm.superficie_total, birg.id
 -- BI_Hecho_Alquiler 
 INSERT INTO MANGO_DB.BI_Hecho_Alquiler(id_rango_etario_inquilino, id_tiempo, id_sucursal,
 										cantidad_alquileres_concretados, sumatoria_comisiones)
-SELECT birg.id, biti.id, bis.codigo, COUNT(*), SUM(alq.comision)
+SELECT birg.id 'id_rango_etario_inq', biti.id 'tiempo_id', bis.codigo 'codigo sucursal', COUNT(*) 'cant_alquileres_concretados', SUM(alq.comision) 'sumatoria_comisiones'
 FROM MANGO_DB.alquiler alq LEFT JOIN MANGO_DB.inquilino inq ON (alq.id_inquilino = inq.id)
 						LEFT JOIN MANGO_DB.BI_Rango_Etario birg ON (birg.rango = MANGO_DB.getRangoEtario(inq.fecha_nac))
 						LEFT JOIN MANGO_DB.BI_Tiempo biti ON (biti.anio = YEAR(alq.fecha_inicio) AND
@@ -353,6 +353,7 @@ FROM MANGO_DB.alquiler alq LEFT JOIN MANGO_DB.inquilino inq ON (alq.id_inquilino
 						LEFT JOIN MANGO_DB.BI_Sucursal bis ON (bis.codigo = alq.id_sucursal) 
 WHERE birg.id IS NOT NULL
 GROUP BY birg.id, biti.id, bis.codigo, biti.cuatrimestre, biti.anio
+
 
 
 -- BI_Hecho_Pago_Alquiler
