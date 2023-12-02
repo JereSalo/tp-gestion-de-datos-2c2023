@@ -346,7 +346,7 @@ GROUP BY bti.id, biubi.id, biti.id, bis.codigo, birg.id, bimon.id
 
 
 -- Una venta puede tener más de un pago_venta, está mal graficada la relación en el DER
-SELECT cod_venta FROM MANGO_DB.pago_venta
+-- SELECT cod_venta FROM MANGO_DB.pago_venta
 
 
 -- BI_Hecho_Alquiler 
@@ -365,10 +365,12 @@ GROUP BY birg.id, biti.id, bis.codigo, biti.cuatrimestre, biti.anio
 
 
 -- BI_Hecho_Pago_Alquiler
+
+-- Esta tabla de hechos tiene varias cosas para mejorar creo...
 INSERT INTO MANGO_DB.BI_Hecho_Pago_Alquiler(id_tiempo, total_porcentaje_aumentos, cantidad_pagos_en_termino,
 											cantidad_porcentajes_aumentos, cantidad_pagos_incumplidos)
 SELECT biti.id, SUM((pag_al.importe - pag_al_ant.importe)/pag_al_ant.importe*100) AS total_porcentaje_aumentos,
-		COUNT(*) AS cantidad_porcentajes_aumentos,
+		COUNT(*) AS cantidad_pagos_en_termino,
 		COUNT(pag_al_ant.codigo) AS cantidad_porcentajes_aumentos,
 		SUM(CASE WHEN (pag_al.fecha_pago >= pag_al.fecha_vencimiento) then 1 else 0 END) AS cantidad_pagos_incumplidos
 FROM MANGO_DB.pago_alquiler pag_al JOIN MANGO_DB.BI_Tiempo biti ON (biti.anio = YEAR(pag_al.fec_ini) AND
@@ -383,12 +385,17 @@ FROM MANGO_DB.pago_alquiler pag_al JOIN MANGO_DB.BI_Tiempo biti ON (biti.anio = 
 WHERE pag_al.fecha_pago IS NOT NULL								   
 GROUP BY biti.id
 
+
 -- SELECT DE LOS HECHOS PARA VER SI TA TODO BIEN
 
+-- Tan joya
 SELECT * FROM MANGO_DB.BI_Hecho_Alquiler -- Tiene todo
-SELECT * FROM MANGO_DB.BI_Hecho_Anuncio -- Falta sumatoria_monto_por_cierre, pero no se ni que significa así que por eso no lo hago
-SELECT * FROM MANGO_DB.BI_Hecho_Pago_Alquiler -- Falta total_porcentaje_aumentos, y cantidad_porcentajes_aumentos está en 0
 SELECT * FROM MANGO_DB.BI_Hecho_Venta -- Cuando hacés un select casí que todas las ventas difieren en algún aspecto, hay muy pocas que coinciden con las PKs. Aún así creo que está bien porque respetamos la consigna, será problema de los datos eso !
+
+-- A modificar
+SELECT * FROM MANGO_DB.BI_Hecho_Anuncio -- Falta sumatoria_monto_por_cierre, pero no se ni que significa así que por eso no lo hago. Se que es para Vista 9 nomás.
+SELECT * FROM MANGO_DB.BI_Hecho_Pago_Alquiler -- total_porcentaje_aumentos da todo null, y cantidad_porcentajes_aumentos está en 0. cantidad_pagos_en_termino está mal el COUNT(*), 
+
 
 
 /* ------- CREACION DE LAS VISTAS EN FUNCION DE LAS DIMENSIONES ------- */
