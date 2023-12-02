@@ -192,7 +192,7 @@ CREATE TABLE MANGO_DB.BI_Hecho_Pago_Alquiler(
 	total_porcentaje_aumentos NUMERIC(18,0) NULL,
 	cantidad_pagos_en_termino NUMERIC(18,0) NULL,
 	cantidad_porcentajes_aumentos NUMERIC(18,2) NULL,
-	cantidad_pagos_incumplidos NUMERIC(18,2) NULL,
+	cantidad_pagos_incumplidos NUMERIC(18,0) NULL,
 
 	FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id)
 );
@@ -373,7 +373,15 @@ FROM MANGO_DB.pago_alquiler pag_al JOIN MANGO_DB.BI_Tiempo biti ON (biti.anio = 
 																				  pag_al_ant.importe < pag_al.importe AND
 																				  GETDATE() < pag_al.fec_fin
 WHERE pag_al.fecha_pago IS NOT NULL								   
-GROUP BY biti.id		
+GROUP BY biti.id
+
+-- SELECT DE LOS HECHOS PARA VER SI TA TODO BIEN
+
+SELECT * FROM MANGO_DB.BI_Hecho_Alquiler -- Tiene todo
+SELECT * FROM MANGO_DB.BI_Hecho_Anuncio -- Falta sumatoria_monto_por_cierre, pero no se ni que significa así que por eso no lo hago
+SELECT * FROM MANGO_DB.BI_Hecho_Pago_Alquiler -- Falta total_porcentaje_aumentos, y cantidad_porcentajes_aumentos está en 0
+SELECT * FROM MANGO_DB.BI_Hecho_Venta -- Literalmente está vacía
+
 
 /* ------- CREACION DE LAS VISTAS EN FUNCION DE LAS DIMENSIONES ------- */
 
