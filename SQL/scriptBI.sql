@@ -5,8 +5,8 @@ Script Bussiness Inteligence
 USE GD2C2023
 GO
 
-/* ------- DROPEO DE LAS FUNCIONES SI EXISTEN ------- */
-EXEC MANGO_DB.BorrarFuncionesBI;
+/* ------- PROCEDURE PARA RESETEAR CREACION DE FUNCIONES Y TABLAS DEL MODELO BI ------- */
+EXEC MANGO_DB.ResetearBI;
 GO
 
 /* ------- CREACION DE LAS FUNCIONES ------- */
@@ -68,11 +68,6 @@ BEGIN
 END
 GO
 
-/* ------- DROPEO DE HECHOS Y DIMENSIONES SI EXISTEN ------- */
-
-EXEC MANGO_DB.BorrarTablasBI; -- Esto después lo sacamos, es para que podamos ejecutarlo varias veces sin problemas...
-
-
 /* ------- CREACION DE LAS DIMENSIONES ------- */
 CREATE TABLE MANGO_DB.BI_Tiempo (
 	id NUMERIC(18,0) IDENTITY(1,1) PRIMARY KEY,
@@ -125,9 +120,6 @@ CREATE TABLE MANGO_DB.BI_Tipo_Moneda (
 
 /* ------- CREACION DE LOS HECHOS ------- */
 
--- POR AHORA PLANTEAMOS CREAR 3 HECHOS, DE ANUNCIOS, DE VENTAS (CON PAGO DE VENTAS) 
--- Y DE ALQUILERES (CON CADA PAGO DE ALQUILER)
-
 CREATE TABLE MANGO_DB.BI_Hecho_Anuncio (
 	id_ubicacion NUMERIC(18,0),
 	id_tiempo NUMERIC(18,0),
@@ -143,7 +135,7 @@ CREATE TABLE MANGO_DB.BI_Hecho_Anuncio (
 	sumatoria_duracion NUMERIC(18,0) NULL,
 	cantidad_operaciones_concretadas NUMERIC(18,0) NULL,
 	sumatoria_monto_por_cierre NUMERIC(18,2) NULL,
-	cantidad_anuncios_totales NUMERIC(18,2) NULL
+	cantidad_anuncios_totales NUMERIC(18,0) NULL
 
 	FOREIGN KEY (id_ubicacion) REFERENCES MANGO_DB.BI_Ubicacion(id),
     FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id),
@@ -204,6 +196,8 @@ CREATE TABLE MANGO_DB.BI_Hecho_Pago_Alquiler(
 
 	FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id)
 );
+
+
 /* ------- CARGA DE LAS DIMENSIONES ------- */
 
 -- BI_Tiempo
@@ -300,10 +294,10 @@ FROM MANGO_DB.moneda m
 -- BI_Hecho_Anuncio ACLARACION: CARGAR LA FECHA DE ALTA en id tiempo
 INSERT INTO MANGO_DB.BI_Hecho_Anuncio (id_tipo_operacion, id_ubicacion, id_ambientes, id_tiempo, id_tipo_inmueble, 
 									   id_rango_m2, id_tipo_moneda, id_rango_etario_agente, id_sucursal, sumatoria_duracion, 
-									   sumatoria_precio)
+									   sumatoria_precio, cantidad_anuncios_totales, cantidad_operaciones_concretadas)
 SELECT a.id_tipo_operacion, u.id, amb.id, biti.id, tipoInmu.id, rangoM2.id, tipoMon.id, rangEtAg.id, bis.codigo,
 	   SUM(DATEDIFF(DAY, a.fecha_publicacion, a.fecha_finalizacion)),
-	   SUM(a.precio_publicado)
+	   SUM(a.precio_publicado), COUNT(*), SUM(CASE WHEN ea.estado IN ('Vendido','Alquilado') THEN 1 ELSE 0 END)
 FROM MANGO_DB.anuncio a JOIN MANGO_DB.tipo_operacion tiO ON (a.id_tipo_operacion = tiO.id)
 						JOIN MANGO_DB.BI_Tipo_Operacion tipoOp ON (tipoOp.tipo = tiO.tipo)
 						JOIN MANGO_DB.BI_tiempo biti ON (biti.anio = YEAR(a.fecha_publicacion) AND biti.mes = MONTH(a.fecha_publicacion) AND biti.cuatrimestre = MANGO_DB.getCuatrimestre(a.fecha_publicacion))
@@ -323,9 +317,15 @@ FROM MANGO_DB.anuncio a JOIN MANGO_DB.tipo_operacion tiO ON (a.id_tipo_operacion
 						JOIN MANGO_DB.BI_Rango_etario rangEtAg ON (rangEtAg.rango = MANGO_DB.getRangoEtario(agente.fecha_nac))
 						JOIN MANGO_DB.sucursal s ON (s.codigo = agente.id_sucursal)
 						JOIN MANGO_DB.BI_Sucursal bis ON (bis.codigo = s.codigo)
+						JOIN MANGO_DB.estado_anuncio ea ON (ea.id = a.id_estado)
 GROUP BY a.id_tipo_operacion, u.id, amb.id, biti.id, tipoInmu.id, rangoM2.id, tipoMon.id, rangEtAg.id, bis.codigo;
 
+
+
+-- SUM(CASE WHEN a.id_estado = 1 THEN 1 ELSE 0 END)
+
 /*
+
 UPDATE MANGO_DB.BI_Hecho_Anuncio
 SET cantidad_operaciones_concretadas = (SELECT COUNT(a.fecha_finalizacion)
 										FROM MANGO_DB.anuncio a
@@ -337,7 +337,18 @@ SET sumatoria_monto_por_cierre = (SELECT SUM(a.precio_publicado)
 									FROM MANGO_DB.anuncio a
 									WHERE a.fecha_finalizacion IS NOT NULL
 									)
+
 */
+
+-- SELECT SUM(cantidad_anuncios_totales) FROM MANGO_DB.BI_Hecho_Anuncio -- Está perfecto que de esto, significa que tenemos datos de todos los anuncios en la tabla de hechos.
+
+SELECT * FROM MANGO_DB.anuncio an JOIN MANGO_DB.estado_anuncio ea ON ea.id = an.id_estado
+
+SELECT * FROM MANGO_DB.anuncio an
+
+-- Operaciones concretadas serían de estado vendido o alquilado
+
+SELECT * FROM MANGO_DB.BI_Hecho_Anuncio
 
 -- BI_Hecho_Venta
 -- CHEQUEAR cantidad_ventas_concretadas SI ES COUNT(*)
