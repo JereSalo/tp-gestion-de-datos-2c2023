@@ -403,7 +403,7 @@ SELECT * FROM MANGO_DB.BI_Hecho_Pago_Alquiler -- total_porcentaje_aumentos da to
 -- VISTA 1
 -- TODO ACOMODAR LOS NOMBRES
 GO
-CREATE VIEW MANGO_DB.duracion_promedio_anuncios AS
+CREATE VIEW MANGO_DB.BI_duracion_promedio_anuncios AS
 SELECT 
 	(bi_ha.sumatoria_duracion / COUNT(*)) AS 'Duracion promedio',
 	bi_to.tipo AS 'Tipo operacion',
@@ -422,7 +422,7 @@ GO
 -- VISTA 2
 -- TODO ACOMODAR LOS NOMBRES
 GO
-CREATE VIEW MANGO_DB.precio_promedio_anuncios AS
+CREATE VIEW MANGO_DB.BI_precio_promedio_anuncios AS
 SELECT 
 	(sumatoria_precio / COUNT(*)) AS 'Precio promedio',
 	bi_to.tipo AS 'Tipo operacion',
@@ -441,7 +441,7 @@ GO
 -- VISTA 3
 -- TODO ACOMODAR LOS NOMBRES-- PROBAR PORQUE NO SE SI FUNCIONA COMO CREO!!
 GO
-CREATE VIEW MANGO_DB.barrios_mas_elegidos_alquiler AS
+CREATE VIEW MANGO_DB.BI_barrios_mas_elegidos_alquiler AS
 SELECT TOP 5
 	bi_ubi.barrio AS 'Barrio',
 	bi_re.rango AS 'Rango etario',
@@ -458,7 +458,7 @@ GO
 -- VISTA 4
 -- TODO ACOMODAR LOS NOMBRES
 GO
-CREATE VIEW MANGO_DB.porcentaje_incumplimiento_pagos_alquileres AS
+CREATE VIEW MANGO_DB.BI_porcentaje_incumplimiento_pagos_alquileres AS
 SELECT 
 	(((bi_hpa.cantidad_pagos_en_termino + bi_hpa.cantidad_pagos_incumplidos) - bi_hpa.cantidad_pagos_en_termino) * 100) / (bi_hpa.cantidad_pagos_en_termino + bi_hpa.cantidad_pagos_incumplidos) AS 'Porcentaje incumplimiento',
 	bi_tie.cuatrimestre AS 'Cuatrimestre',
@@ -469,7 +469,7 @@ GO
 
 -- VISTA 5
 GO
-CREATE VIEW MANGO_DB.porcentaje_promedio_incremento_valor_alquileres AS
+CREATE VIEW MANGO_DB.BI_porcentaje_promedio_incremento_valor_alquileres AS
 SELECT t.mes, t.anio, sum(bi_pag_al.total_porcentaje_aumentos) / sum(bi_pag_al.cantidad_porcentajes_aumentos) AS porcentaje_prom_incremento, sum(bi_pag_al.total_porcentaje_aumentos) AS total_porcentaje_aumentos, sum(bi_pag_al.cantidad_porcentajes_aumentos) AS cantidad_porcentajes_aumentos
 FROM MANGO_DB.BI_Hecho_Pago_Alquiler bi_pag_al
     JOIN MANGO_DB.BI_Tiempo t ON bi_pag_al.id_tiempo = t.id
@@ -480,7 +480,7 @@ GO
 -- VISTA 6
 -- TODO ACOMODAR LOS NOMBRES
 GO
-CREATE VIEW MANGO_DB.precio_promedio_m2 AS
+CREATE VIEW MANGO_DB.BI_precio_promedio_m2 AS
 SELECT
 	(bi_hv.sumatoria_m2_inmueble / bi_hv.sumatoria_precio_venta) AS 'Promedio',
 	bi_ti.tipo AS 'Tipo de inmueble',
@@ -498,7 +498,7 @@ GO
 -- TODO ACOMODAR LOS NOMBRES
 -- SI NO FUNCIONA, CAMBIAR LOS NOMBRES DE LAS COLUMNAS EN COMUN Y NO HACERLAS STRING SINO NOMBRE DIRECTO
 GO
-CREATE VIEW MANGO_DB.comision_promedio AS
+CREATE VIEW MANGO_DB.BI_comision_promedio AS
 SELECT 'Comision promedio', 'Tipo operacion', 'Sucursal', 'Cuatrimestre', 'Anio'
 FROM (
 	SELECT 
@@ -531,7 +531,7 @@ GO
 
 -- VISTA 8
 GO
-CREATE VIEW MANGO_DB.porcentaje_operaciones_concretadas AS
+CREATE VIEW MANGO_DB.BI_porcentaje_operaciones_concretadas AS
 SELECT 
 	(bi_hanc.cantidad_operaciones_concretadas * 100) / bi_hanc.cantidad_anuncios_totales AS 'Porcentaje', 
 	bi_to.tipo AS 'Tipo operacion', 
@@ -550,7 +550,7 @@ GO
 -- VISTA 9
 -- TODO ACOMODAR LOS NOMBRES
 GO
-CREATE VIEW MANGO_DB.monto_total_de_cierre AS
+CREATE VIEW MANGO_DB.BI_monto_total_de_cierre AS
 SELECT 
 	bi_hanc.sumatoria_monto_por_cierre AS 'Monto total',
 	bi_to.tipo AS 'Tipo operacion',
