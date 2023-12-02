@@ -15,6 +15,10 @@ IF OBJECT_ID('MANGO_DB.BorrarFuncionesBI', 'P') IS NOT NULL
 BEGIN DROP PROCEDURE MANGO_DB.BorrarFuncionesBI; END;
 GO
 
+IF OBJECT_ID('MANGO_DB.BorrarVistasBI', 'P') IS NOT NULL
+BEGIN DROP PROCEDURE MANGO_DB.BorrarVistasBI; END;
+GO
+
 IF OBJECT_ID('MANGO_DB.BorrarFuncionesTransaccional', 'P') IS NOT NULL
 BEGIN DROP PROCEDURE MANGO_DB.BorrarFuncionesTransaccional; END;
 GO
@@ -26,7 +30,6 @@ GO
 IF OBJECT_ID('MANGO_DB.ResetearBI', 'P') IS NOT NULL
 BEGIN DROP PROCEDURE MANGO_DB.ResetearBI; END;
 GO
-
 
 CREATE PROCEDURE MANGO_DB.BorrarFuncionesTransaccional
 AS
@@ -206,12 +209,45 @@ BEGIN
 END
 GO
 
+CREATE PROCEDURE MANGO_DB.BorrarVistasBI
+AS
+BEGIN
+	IF OBJECT_ID('MANGO_DB.BI_barrios_mas_elegidos_alquiler', 'U') IS NOT NULL
+	BEGIN DROP VIEW MANGO_DB.BI_barrios_mas_elegidos_alquiler; END;
+	
+	IF OBJECT_ID('MANGO_DB.BI_comision_promedio', 'U') IS NOT NULL
+	BEGIN DROP VIEW MANGO_DB.BI_comision_promedio; END;
+
+	IF OBJECT_ID('MANGO_DB.BI_duracion_promedio_anuncios', 'U') IS NOT NULL
+	BEGIN DROP VIEW MANGO_DB.BI_duracion_promedio_anuncios; END;
+
+	IF OBJECT_ID('MANGO_DB.BI_monto_total_de_cierre', 'U') IS NOT NULL
+	BEGIN DROP VIEW MANGO_DB.BI_monto_total_de_cierre; END;
+
+	IF OBJECT_ID('MANGO_DB.BI_porcentaje_incumplimiento_pagos_alquileres', 'U') IS NOT NULL
+	BEGIN DROP VIEW MANGO_DB.BI_porcentaje_incumplimiento_pagos_alquileres; END;
+
+	IF OBJECT_ID('MANGO_DB.BI_porcentaje_operaciones_concretadas', 'U') IS NOT NULL
+	BEGIN DROP VIEW MANGO_DB.BI_porcentaje_operaciones_concretadas; END;
+
+	IF OBJECT_ID('MANGO_DB.BI_porcentaje_promedio_incremento_valor_alquileres', 'U') IS NOT NULL
+	BEGIN DROP VIEW MANGO_DB.BI_porcentaje_promedio_incremento_valor_alquileres; END;
+
+	IF OBJECT_ID('MANGO_DB.BI_precio_promedio_anuncios', 'U') IS NOT NULL
+	BEGIN DROP VIEW MANGO_DB.BI_precio_promedio_anuncios; END;
+
+	IF OBJECT_ID('MANGO_DB.BI_precio_promedio_m2', 'U') IS NOT NULL
+	BEGIN DROP VIEW MANGO_DB.BI_precio_promedio_m2; END;
+END
+GO
+
 
 CREATE PROCEDURE MANGO_DB.ResetearBI
 AS
 BEGIN
 	EXEC MANGO_DB.BorrarTablasBI;
 	EXEC MANGO_DB.BorrarFuncionesBI;
+	EXEC MANGO_DB.BorrarVistasBI;
 
 	PRINT 'Se reseteó modelo BI del esquema MANGO_DB ';
 END
