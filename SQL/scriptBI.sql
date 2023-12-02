@@ -320,36 +320,6 @@ FROM MANGO_DB.anuncio a JOIN MANGO_DB.tipo_operacion tiO ON (a.id_tipo_operacion
 						JOIN MANGO_DB.estado_anuncio ea ON (ea.id = a.id_estado)
 GROUP BY a.id_tipo_operacion, u.id, amb.id, biti.id, tipoInmu.id, rangoM2.id, tipoMon.id, rangEtAg.id, bis.codigo;
 
-
-
--- SUM(CASE WHEN a.id_estado = 1 THEN 1 ELSE 0 END)
-
-/*
-
-UPDATE MANGO_DB.BI_Hecho_Anuncio
-SET cantidad_operaciones_concretadas = (SELECT COUNT(a.fecha_finalizacion)
-										FROM MANGO_DB.anuncio a
-										WHERE a.fecha_finalizacion IS NOT NULL
-										)
-						
-UPDATE MANGO_DB.BI_Hecho_Anuncio
-SET sumatoria_monto_por_cierre = (SELECT SUM(a.precio_publicado)
-									FROM MANGO_DB.anuncio a
-									WHERE a.fecha_finalizacion IS NOT NULL
-									)
-
-*/
-
--- SELECT SUM(cantidad_anuncios_totales) FROM MANGO_DB.BI_Hecho_Anuncio -- Está perfecto que de esto, significa que tenemos datos de todos los anuncios en la tabla de hechos.
-
-SELECT * FROM MANGO_DB.anuncio an JOIN MANGO_DB.estado_anuncio ea ON ea.id = an.id_estado
-
-SELECT * FROM MANGO_DB.anuncio an
-
--- Operaciones concretadas serían de estado vendido o alquilado
-
-SELECT * FROM MANGO_DB.BI_Hecho_Anuncio
-
 -- BI_Hecho_Venta
 -- CHEQUEAR cantidad_ventas_concretadas SI ES COUNT(*)
 INSERT INTO MANGO_DB.BI_Hecho_Venta (id_tipo_inmueble, id_ubicacion, id_tiempo, id_sucursal, id_rango_m2,
