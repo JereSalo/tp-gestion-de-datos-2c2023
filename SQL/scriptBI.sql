@@ -202,6 +202,7 @@ CREATE TABLE MANGO_DB.BI_Hecho_Alquiler(
 	PRIMARY KEY (id_rango_etario_inquilino, id_tiempo, id_sucursal, id_rango_etario_agente, id_ubicacion, id_ambientes, id_tipo_inmueble, id_rango_m2, id_tipo_moneda)
 );
 
+
 CREATE TABLE MANGO_DB.BI_Hecho_Pago_Alquiler(
 	id_rango_etario_inquilino NUMERIC(18,0),
 	id_rango_etario_agente NUMERIC(18,0),
@@ -211,7 +212,6 @@ CREATE TABLE MANGO_DB.BI_Hecho_Pago_Alquiler(
 	id_tipo_inmueble NUMERIC(18,0),
 	id_rango_m2 NUMERIC(18,0),
 	id_sucursal NUMERIC(18,0),
-	id_tipo_moneda NUMERIC(18,0),
 	
 	total_porcentaje_aumentos NUMERIC(18,0) NULL, -- VISTAS: 5
 	cantidad_pagos_en_termino NUMERIC(18,0) NULL, -- VISTAS: 4
@@ -226,9 +226,8 @@ CREATE TABLE MANGO_DB.BI_Hecho_Pago_Alquiler(
     FOREIGN KEY (id_ubicacion) REFERENCES MANGO_DB.BI_Ubicacion(id),
     FOREIGN KEY (id_rango_m2) REFERENCES MANGO_DB.BI_Rango_m2(id),
 	FOREIGN KEY (id_ambientes) REFERENCES MANGO_DB.BI_Ambientes(id),
-	FOREIGN KEY (id_tipo_moneda) REFERENCES MANGO_DB.BI_tipo_moneda(id),
 
-	PRIMARY KEY (id_rango_etario_inquilino, id_tiempo, id_sucursal, id_rango_etario_agente, id_ubicacion, id_ambientes, id_tipo_inmueble, id_rango_m2, id_tipo_moneda)
+	PRIMARY KEY (id_rango_etario_inquilino, id_tiempo, id_sucursal, id_rango_etario_agente, id_ubicacion, id_ambientes, id_tipo_inmueble, id_rango_m2)
 );
 
 
@@ -394,18 +393,18 @@ GROUP BY bti.id, biubi.id, biti.id, bis.codigo, birg.id, bimon.id, biamb.id
 
 -- BI_Hecho_Alquiler 
 INSERT INTO MANGO_DB.BI_Hecho_Alquiler
-(id_rango_etario_inquilino, id_rango_etario_agente, id_tiempo, id_ubicacion, id_ambientes, id_tipo_inmueble, 
+(id_rango_etario_agente, id_rango_etario_inquilino, id_tiempo, id_ubicacion, id_ambientes, id_tipo_inmueble, 
 id_rango_m2, id_sucursal, id_tipo_moneda, cantidad_alquileres_concretados, sumatoria_comisiones)
 SELECT 
-	birg.id,
 	bi_rg_agente.id,
+	bi_rg_inq.id,
 	biti.id, 
 	bi_ubi.id,
 	bi_amb.id,
 	bi_tinm.id,
 	bi_rm2.id,
-	bis.codigo, 
-	bi_tm.id,
+	bis.codigo,
+	bi_mon.id,
 	COUNT(*), 
 	SUM(alq.comision)
 FROM MANGO_DB.alquiler alq 
@@ -424,20 +423,21 @@ FROM MANGO_DB.alquiler alq
 	LEFT JOIN MANGO_DB.agente agent ON agent.id = anunc.id_agente
 
 	-- INICIO JOIN CON TABLAS BI
-	LEFT JOIN MANGO_DB.BI_Rango_Etario birg ON (birg.rango = MANGO_DB.getRangoEtario(inq.fecha_nac))
 	LEFT JOIN MANGO_DB.BI_Tiempo biti ON (biti.anio = YEAR(alq.fecha_inicio) AND
 										  biti.mes = MONTH(alq.fecha_inicio) AND
 										  biti.cuatrimestre = MANGO_DB.getCuatrimestre(alq.fecha_inicio))
 	LEFT JOIN MANGO_DB.BI_Sucursal bis ON (bis.codigo = alq.id_sucursal)
-	LEFT JOIN MANGO_DB.BI_Tipo_Moneda bi_tm ON bi_tm.id = anunc.id_moneda
 	LEFT JOIN MANGO_DB.BI_Ubicacion bi_ubi ON (bi_ubi.barrio = bar.nombre AND 
 											   bi_ubi.localidad = loc.nombre AND
 											   bi_ubi.provincia = prov.nombre)
 	LEFT JOIN MANGO_DB.BI_Rango_etario bi_rg_agente ON bi_rg_agente.rango = MANGO_DB.getRangoEtario(agent.fecha_nac)
+	LEFT JOIN MANGO_DB.BI_Rango_etario bi_rg_inq ON bi_rg_inq.rango = MANGO_DB.getRangoEtario(inq.fecha_nac)
 	LEFT JOIN MANGO_DB.BI_Ambientes bi_amb ON bi_amb.detalle = amb.detalle
 	LEFT JOIN MANGO_DB.BI_Tipo_Inmueble bi_tinm ON bi_tinm.tipo = tipo_inm.tipo
 	LEFT JOIN MANGO_DB.BI_Rango_m2 bi_rm2 ON bi_rm2.rango = MANGO_DB.getRangoM2(inm.superficie_total)
-GROUP BY birg.id, bi_rg_agente.id, biti.id, bi_ubi.id, bi_amb.id, bi_tinm.id, bi_rm2.id, bis.codigo, bi_tm.id
+	LEFT JOIN MANGO_DB.moneda mon ON (mon.id = anunc.id_moneda)
+	LEFT JOIN MANGO_DB.BI_Tipo_Moneda bi_mon ON (bi_mon.descripcion = mon.descripcion)
+GROUP BY bi_rg_agente.id, bi_rg_inq.id, biti.id, bi_ubi.id, bi_amb.id, bi_tinm.id, bi_rm2.id, bis.codigo, bi_mon.id
 
 -- SELECT * FROM MANGO_DB.BI_Hecho_Alquiler
 
@@ -469,18 +469,41 @@ SELECT * FROM MANGO_DB.alquiler
 
 -- BI_Hecho_Pago_Alquiler
 
--- Esta tabla de hechos tiene varias cosas para mejorar creo...
-INSERT INTO MANGO_DB.BI_Hecho_Pago_Alquiler(id_tiempo, total_porcentaje_aumentos, cantidad_pagos_en_termino,
-											cantidad_porcentajes_aumentos, cantidad_pagos_incumplidos)
-SELECT biti.id, 
+INSERT INTO MANGO_DB.BI_Hecho_Pago_Alquiler(id_tiempo, id_sucursal, id_ubicacion, id_rango_etario_agente, id_rango_etario_inquilino, id_ambientes, id_tipo_inmueble, id_rango_m2, 
+											total_porcentaje_aumentos, cantidad_pagos_en_termino, cantidad_porcentajes_aumentos, cantidad_pagos_incumplidos)
+SELECT biti.id, bis.codigo, bi_ubi.id, bi_rg_agente.id, bi_rg_inq.id, bi_amb.id, bi_tinm.id, bi_rm2.id,
 		SUM((pag_al.importe - pag_al_ant.importe)/pag_al_ant.importe*100) AS total_porcentaje_aumentos,
 		COUNT(*) AS cantidad_pagos_en_termino,
 		COUNT(pag_al_ant.codigo) AS cantidad_porcentajes_aumentos,
 		SUM(CASE WHEN (pag_al.fecha_pago >= pag_al.fecha_vencimiento) then 1 else 0 END) AS cantidad_pagos_incumplidos
 FROM MANGO_DB.alquiler a
-	-- INICIO JOIN CON TABLAS BI 
-	-- (TIEMPO, UBICACION, SUCURSAL, RANGO ETARIO AGENTE, RANGO ETARIO INQUILINO, TIPO INMUEBLE, AMBIENTES, RANGO M2, TIPO MONEDA)
+						-- JOINS CON TABLAS DEL DOMINIO PARA PODER JOINEAR CON LAS DIMENSIONES
 						LEFT JOIN MANGO_DB.pago_alquiler pag_al ON a.codigo = pag_al.id_alquiler
+						LEFT JOIN MANGO_DB.alquiler alq ON alq.codigo = pag_al.id_alquiler
+						LEFT JOIN MANGO_DB.anuncio anunc ON anunc.codigo = alq.id_anuncio
+						-- Para tipo_inmueble, ambientes
+						LEFT JOIN MANGO_DB.inmueble inm ON inm.codigo = anunc.id_inmueble
+						LEFT JOIN MANGO_DB.tipo_inmueble tipo_inm ON tipo_inm.id = inm.id_tipo_inmueble
+						LEFT JOIN MANGO_DB.ambientes amb ON amb.id = inm.id_cantidad_ambientes
+						-- Para ubicacion
+						LEFT JOIN MANGO_DB.barrio bar ON bar.id = inm.id_barrio
+						LEFT JOIN MANGO_DB.localidad loc ON loc.id = inm.id_localidad
+						LEFT JOIN MANGO_DB.provincia prov ON prov.id = loc.id_provincia
+						-- Para los rangos etarios
+						LEFT JOIN MANGO_DB.inquilino inq ON (alq.id_inquilino = inq.id)
+						LEFT JOIN MANGO_DB.agente agent ON agent.id = anunc.id_agente
+
+						-- INICIO JOIN CON TABLAS BI
+						LEFT JOIN MANGO_DB.BI_Sucursal bis ON (bis.codigo = alq.id_sucursal) -- TA BIEN
+						LEFT JOIN MANGO_DB.BI_Ubicacion bi_ubi ON (bi_ubi.barrio = bar.nombre AND 
+																   bi_ubi.localidad = loc.nombre AND
+																   bi_ubi.provincia = prov.nombre)
+						LEFT JOIN MANGO_DB.BI_Rango_etario bi_rg_agente ON bi_rg_agente.rango = MANGO_DB.getRangoEtario(agent.fecha_nac)
+						LEFT JOIN MANGO_DB.BI_Rango_etario bi_rg_inq ON bi_rg_inq.rango = MANGO_DB.getRangoEtario(inq.fecha_nac)
+						LEFT JOIN MANGO_DB.BI_Ambientes bi_amb ON bi_amb.detalle = amb.detalle
+						LEFT JOIN MANGO_DB.BI_Tipo_Inmueble bi_tinm ON bi_tinm.tipo = tipo_inm.tipo
+						LEFT JOIN MANGO_DB.BI_Rango_m2 bi_rm2 ON bi_rm2.rango = MANGO_DB.getRangoM2(inm.superficie_total)
+
 						LEFT JOIN MANGO_DB.BI_Tiempo biti ON (biti.anio = YEAR(pag_al.fec_ini) AND
 														biti.mes = MONTH(pag_al.fec_ini) AND
 														biti.cuatrimestre = MANGO_DB.getCuatrimestre(pag_al.fec_ini))
@@ -489,8 +512,8 @@ FROM MANGO_DB.alquiler a
 																				  MONTH(pag_al_ant.fecha_pago) = MONTH(pag_al.fecha_pago) AND
 																				  pag_al_ant.importe < pag_al.importe AND
 																				  GETDATE() < pag_al.fec_fin
-WHERE pag_al.fecha_pago IS NOT NULL								   
-GROUP BY biti.id
+WHERE pag_al.fecha_pago IS NOT NULL -- hace falta esto? No lo saqué por las dudas
+GROUP BY biti.id, bis.codigo, bi_ubi.id, bi_rg_agente.id, bi_rg_inq.id, bi_amb.id, bi_tinm.id, bi_rm2.id
 GO
 
 -- SELECT * FROM MANGO_DB.BI_Hecho_Pago_Alquiler
