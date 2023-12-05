@@ -190,7 +190,8 @@ CREATE TABLE MANGO_DB.BI_Hecho_Alquiler(
 
 	-- Seria alquileres dados de alta en realidad
 	cantidad_alquileres_concretados INT NULL, -- VISTAS: 3, 7, 8
-	sumatoria_comisiones NUMERIC(18,2) NULL -- VISTAS: 7
+	sumatoria_comisiones NUMERIC(18,2) NULL, -- VISTAS: 7
+	cantidad_pagos_incumplidos NUMERIC(18,0) NULL,
 
 	FOREIGN KEY (id_rango_etario_inquilino) REFERENCES MANGO_DB.BI_Rango_etario(id),
 	FOREIGN KEY (id_rango_etario_agente) REFERENCES MANGO_DB.BI_Rango_etario(id),
@@ -214,6 +215,7 @@ CREATE TABLE MANGO_DB.BI_Hecho_Pago_Alquiler(
 	cantidad_pagos_con_aumento NUMERIC(18,0), 
 	cantidad_pagos NUMERIC(18,0), 
 	cantidad_pagos_incumplidos NUMERIC(18,0),
+	cantidad_periodos_no_pagos NUMERIC(18,0),
 
 	FOREIGN KEY (id_tiempo) REFERENCES MANGO_DB.BI_Tiempo(id)
 );
@@ -415,7 +417,7 @@ GROUP BY bti.id, biubi.id, biti.id, bis.codigo, birg.id, bimon.id, biamb.id
 -- BI_Hecho_Alquiler 
 INSERT INTO MANGO_DB.BI_Hecho_Alquiler
 (id_rango_etario_agente, id_rango_etario_inquilino, id_tiempo, id_ubicacion, id_ambientes, id_tipo_inmueble, 
-id_rango_m2, id_sucursal, id_tipo_moneda, cantidad_alquileres_concretados, sumatoria_comisiones)
+id_rango_m2, id_sucursal, id_tipo_moneda, cantidad_alquileres_concretados, sumatoria_comisiones, cantidad_pagos_incumplidos)
 SELECT 
 	bi_rg_agente.id,
 	bi_rg_inq.id,
@@ -427,7 +429,8 @@ SELECT
 	bis.codigo,
 	bi_mon.id,
 	COUNT(*), 
-	SUM(alq.comision)
+	SUM(alq.comision),
+	SUM(tabla_pagos.cant_periodos - tabla_pagos.cantidad_periodos_pagos)
 FROM MANGO_DB.alquiler alq 
 	-- JOINS CON TABLAS DEL DOMINIO PARA PODER JOINEAR CON LAS DIMENSIONES
 	LEFT JOIN MANGO_DB.anuncio anunc ON anunc.codigo = alq.id_anuncio
@@ -442,7 +445,12 @@ FROM MANGO_DB.alquiler alq
 	-- Para los rangos etarios
 	LEFT JOIN MANGO_DB.inquilino inq ON (alq.id_inquilino = inq.id)
 	LEFT JOIN MANGO_DB.agente agent ON agent.id = anunc.id_agente
-
+	-- Para contar cantidad_pagos_incumplidos
+	LEFT JOIN (SELECT alq.codigo id_alquiler, alq.cant_periodos cant_periodos, COALESCE(COUNT(*), 0) cantidad_periodos_pagos
+	 FROM MANGO_DB.alquiler alq
+		JOIN MANGO_DB.pago_alquiler pag_alq ON pag_alq.id_alquiler = alq.codigo
+	 GROUP BY alq.codigo, alq.cant_periodos) tabla_pagos ON tabla_pagos.id_alquiler = alq.codigo
+	 
 	-- INICIO JOIN CON TABLAS BI
 	LEFT JOIN MANGO_DB.BI_Tiempo biti ON (biti.anio = YEAR(alq.fecha_inicio) AND
 										  biti.mes = MONTH(alq.fecha_inicio) AND
@@ -463,17 +471,19 @@ GROUP BY bi_rg_agente.id, bi_rg_inq.id, biti.id, bi_ubi.id, bi_amb.id, bi_tinm.i
 -- SELECT * FROM MANGO_DB.alquiler -- 12.842 filas
 -- SELECT SUM(cantidad_alquileres_concretados) FROM MANGO_DB.BI_Hecho_Alquiler -- 12.842 => esta bien importado
 
+
+
 -- BI_Hecho_Pago_Alquiler
 INSERT INTO MANGO_DB.BI_Hecho_Pago_Alquiler
-(id_tiempo, sumatoria_aumentos, cantidad_pagos_con_aumento, cantidad_pagos, cantidad_pagos_incumplidos, sumatoria_pagos)
+(id_tiempo, sumatoria_aumentos, cantidad_pagos_con_aumento, cantidad_pagos, sumatoria_pagos)
 SELECT
 	bi_tie.id id_tiempo,
 	COALESCE(SUM(pago_act.importe - pago_ant.importe),0) sumatoria_aumento,
-	COUNT (CASE	WHEN pago_act.importe <> pago_ant.importe THEN 1 END) cantidad_pagos_con_aumento,
+	COUNT (CASE	WHEN pago_act.importe > pago_ant.importe THEN 1 END) cantidad_pagos_con_aumento,
 	COUNT(*) cant_pagos,
-	COUNT(CASE WHEN pago_act.fecha_pago > pago_act.fecha_vencimiento THEN 1 END) cantidad_pagos_incumplidos,
 	SUM(pago_act.importe)
 FROM MANGO_DB.pago_alquiler pago_act
+	LEFT JOIN MANGO_DB.alquiler alq ON alq.codigo = pago_act.id_alquiler
 	LEFT JOIN MANGO_DB.pago_alquiler pago_ant ON (pago_ant.id_alquiler = pago_act.id_alquiler AND
 											 YEAR(pago_ant.fecha_pago) = YEAR(pago_act.fecha_pago) AND
 											 MONTH(pago_ant.fecha_pago) = MONTH(pago_act.fecha_pago) - 1)
@@ -529,7 +539,6 @@ GROUP BY bi_to.tipo, bi_ti.tipo, bi_rango.rango, bi_t.cuatrimestre, bi_t.anio, b
 GO
 
 
-
 -- VISTA 3
 GO
 CREATE VIEW MANGO_DB.BI_barrios_mas_elegidos_alquiler AS
@@ -542,14 +551,15 @@ SELECT TOP 5
 FROM MANGO_DB.BI_Hecho_Alquiler bi_ha
 	LEFT JOIN MANGO_DB.BI_Rango_Etario bi_re ON bi_re.id = bi_ha.id_rango_etario_inquilino
 	LEFT JOIN MANGO_DB.BI_Tiempo bi_ti ON bi_ti.id = bi_ha.id_tiempo
-	-- LEFT JOIN MANGO_DB.BI_Hecho_Anuncio bi_han ON bi_han.id_tiempo = bi_ti.id
 	LEFT JOIN MANGO_DB.BI_Ubicacion bi_ubi ON bi_ubi.id = bi_ha.id_ubicacion
 GROUP BY bi_ubi.barrio, bi_re.rango, bi_ti.cuatrimestre, bi_ti.anio
 ORDER BY SUM(bi_ha.cantidad_alquileres_concretados) DESC
 GO
 
 
--- VISTA 4 REVISARLA
+
+-- VISTA 4
+-- REVISARLA! SE PODRIA HACER CON HECHO_ALQUILER
 GO
 CREATE VIEW MANGO_DB.BI_porcentaje_incumplimiento_pagos_alquileres AS
 SELECT 
@@ -561,13 +571,14 @@ FROM MANGO_DB.BI_Hecho_Pago_Alquiler bi_hpa
 GROUP BY bi_tie.anio, bi_tie.mes
 GO
 
-
--- VISTA 5 REVISARLA
+-- VISTA 5
+-- REVISARLA! VER BIEN LO DEL AUMENTO
 GO
 CREATE VIEW MANGO_DB.BI_porcentaje_promedio_incremento_valor_alquileres AS
 SELECT 
 	t.mes,
 	t.anio, 
+	SUM(bi_pag_al.cantidad_pagos) 'Cantidad total pagos',
 	((SUM(bi_pag_al.sumatoria_aumentos) / SUM(bi_pag_al.cantidad_pagos_con_aumento)) * 100) / SUM(bi_pag_al.sumatoria_pagos) AS 'Porcentaje promedio de incremento'
 FROM MANGO_DB.BI_Hecho_Pago_Alquiler bi_pag_al
     JOIN MANGO_DB.BI_Tiempo t ON bi_pag_al.id_tiempo = t.id
@@ -575,6 +586,7 @@ WHERE bi_pag_al.cantidad_pagos_con_aumento != 0
 GROUP BY t.mes, t.anio
 GO
 
+SELECT * FROM MANGO_DB.BI_porcentaje_promedio_incremento_valor_alquileres
 
 -- VISTA 6
 GO
