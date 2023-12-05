@@ -7,7 +7,7 @@ GO
 
 /* ------- PROCEDURE PARA RESETEAR CREACION DE FUNCIONES Y TABLAS DEL MODELO BI ------- */
 
-EXEC MANGO_DB.ResetearBI;
+-- EXEC MANGO_DB.ResetearBI;
 GO
 
 /* ------- CREACION DE LAS FUNCIONES ------- */
@@ -382,9 +382,6 @@ FROM MANGO_DB.venta v
 	LEFT JOIN MANGO_DB.BI_Ambientes biamb ON (biamb.detalle = amb.detalle) 
 GROUP BY bti.id, biubi.id, biti.id, bis.codigo, birg.id, bimon.id, biamb.id
 
--- SELECT SUM(cantidad_ventas_concretadas) FROM MANGO_DB.BI_Hecho_Venta -- 4.058 => esta bien importado
--- SELECT * FROM MANGO_DB.venta -- 4.058 filas
-
 -- BI_Hecho_Alquiler 
 INSERT INTO MANGO_DB.BI_Hecho_Alquiler
 (id_rango_etario_agente, id_rango_etario_inquilino, id_tiempo, id_ubicacion, id_ambientes, id_tipo_inmueble, 
@@ -440,9 +437,6 @@ FROM MANGO_DB.alquiler alq
 	LEFT JOIN MANGO_DB.BI_Tipo_Moneda bi_mon ON (bi_mon.descripcion = mon.descripcion)
 GROUP BY bi_rg_agente.id, bi_rg_inq.id, biti.id, bi_ubi.id, bi_amb.id, bi_tinm.id, bi_rm2.id, bis.codigo, bi_mon.id
 
--- SELECT * FROM MANGO_DB.alquiler -- 12.842 filas
--- SELECT SUM(cantidad_alquileres_concretados) FROM MANGO_DB.BI_Hecho_Alquiler -- 12.842 => esta bien importado
-
 -- BI_Hecho_Pago_Alquiler
 INSERT INTO MANGO_DB.BI_Hecho_Pago_Alquiler
 (id_tiempo, porcentaje_aumento, cantidad_pagos_con_aumento, cantidad_pagos, sumatoria_pagos)
@@ -462,11 +456,6 @@ FROM MANGO_DB.pago_alquiler pago_act
 									   bi_tie.mes = MONTH(pago_act.fecha_pago))
 GROUP BY bi_tie.id
 GO
-
--- SELECT * FROM MANGO_DB.pago_alquiler -- 229.004 filas
--- SELECT SUM(cantidad_pagos) FROM MANGO_DB.BI_Hecho_Pago_Alquiler -- 229.004 => esta bien importado
-
-
 
 
 /* ------- CREACION DE LAS VISTAS EN FUNCION DE LAS DIMENSIONES ------- */
@@ -551,10 +540,6 @@ FROM MANGO_DB.BI_Hecho_Pago_Alquiler bi_pag_al
 WHERE bi_pag_al.cantidad_pagos_con_aumento != 0
 GROUP BY t.mes, t.anio
 GO
-
--- NOS FALTA EL PRIMER MES DE CADA AÑO
-SELECT * FROM MANGO_DB.BI_porcentaje_promedio_incremento_valor_alquileres 
-ORDER BY anio, mes
 
 -- VISTA 6
 GO

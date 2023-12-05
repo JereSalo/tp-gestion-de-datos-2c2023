@@ -37,3 +37,27 @@ FROM gd_esquema.Maestra
 WHERE PROPIETARIO_DNI IS NOT NULL
 GROUP BY PROPIETARIO_DNI, PROPIETARIO_NOMBRE
 HAVING COUNT(*) > 1
+
+
+
+-- SELECT * de las tablas BI_Hecho_Anuncio, BI_Hecho_Venta, BI_Hecho_Alquiler, BI_Hecho_Pago_Alquiler
+SELECT * FROM MANGO_DB.BI_Hecho_Anuncio;
+SELECT * FROM MANGO_DB.BI_Hecho_Venta;
+SELECT * FROM MANGO_DB.BI_Hecho_Alquiler;
+SELECT * FROM MANGO_DB.BI_Hecho_Pago_Alquiler;
+
+-- SELECT * de las tablas BI_Tiempo, BI_Ubicacion, BI_Sucursal, BI_Rango_etario
+SELECT * FROM MANGO_DB.BI_Tiempo;
+SELECT * FROM MANGO_DB.BI_Ubicacion;
+SELECT * FROM MANGO_DB.BI_Sucursal;
+SELECT * FROM MANGO_DB.BI_Rango_etario;
+
+-- SELECT * de las tablas BI_Tipo_Inmueble, BI_Ambientes, BI_Rango_m2, BI_Tipo_Operacion
+SELECT * FROM MANGO_DB.BI_Tipo_Inmueble;
+SELECT * FROM MANGO_DB.BI_Ambientes;
+SELECT * FROM MANGO_DB.BI_Rango_m2;
+SELECT * FROM MANGO_DB.BI_Tipo_Operacion;
+
+-- SELECT * de las tablas BI_Tipo_Moneda, BI_Alquiler
+SELECT * FROM MANGO_DB.BI_Tipo_Moneda;
+SELECT * FROM MANGO_DB.BI_Alquiler;

@@ -14,7 +14,7 @@ END
 
 -- DROP SCHEMA MANGO_DB
 -- DROP PROCEDURE MANGO_DB.BorrarTablas
-EXEC MANGO_DB.ResetearTransaccional;
+-- EXEC MANGO_DB.ResetearTransaccional;
 
 
 /* ------- INICIO DE CREACION DE TABLAS ------- */
